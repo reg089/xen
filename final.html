@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>SmartEdu Enterprise</title>
+
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+<style>
+:root{
+  --bg:#0f172a;--bg2:#1e293b;--bg3:#334155;--text:#e2e8f0;--text2:#94a3b8;
+  --accent:#38bdf8;--accent2:#10b981;--danger:#ef4444;--warning:#f59e0b;
+  --radius:12px;--shadow:0 8px 24px rgba(0,0,0,0.3)
+}
+*{margin:0;padding:0;box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
+body{background:var(--bg);color:var(--text);min-height:100vh}
+.hidden{display:none!important}
+.container{max-width:1100px;margin:auto;padding:20px;min-height:100vh;display:flex;align-items:center;justify-content:center}
+.card{background:var(--bg2);padding:28px;border-radius:var(--radius);box-shadow:var(--shadow)}
+.login-card{width:100%;max-width:420px}
+input,select,button,textarea{
+  width:100%;padding:12px 16px;margin:8px 0;border-radius:10px;
+  border:1px solid var(--bg3);background:var(--bg3);color:var(--text);
+  font-size:16px;outline:none;transition:0.2s
+}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(56,189,248,0.2)}
+.btn{background:var(--accent);color:#000;font-weight:600;cursor:pointer;border:none}
+.btn:hover{opacity:0.9;transform:translateY(-1px)}
+.btn-secondary{background:var(--bg3);color:var(--text)}
+.btn-danger{background:var(--danger);color:#fff}
+.btn-group{display:flex;gap:10px}
+.btn-group button{flex:1}
+.sidebar{
+  width:260px;position:fixed;height:100vh;background:var(--bg2);
+  padding:24px;border-right:1px solid var(--bg3);transition:0.3s;z-index:100
+}
+.sidebar h3{margin-bottom:24px;color:var(--accent);font-size:1.4rem}
+.nav-btn{
+  width:100%;padding:12px 16px;margin:6px 0;border-radius:10px;
+  background:transparent;color:var(--text);text-align:left;cursor:pointer;
+  transition:0.2s;display:flex;align-items:center;gap:10px
+}
+.nav-btn:hover{background:var(--bg3)}
+.nav-btn.active{background:var(--accent);color:#000}
+.main{margin-left:260px;padding:28px;transition:0.3s}
+.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;flex-wrap:wrap;gap:16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-bottom:24px}
+.stat-card{background:var(--bg2);padding:20px;border-radius:var(--radius);box-shadow:var(--shadow)}
+.stat-card h3{color:var(--text2);font-size:0.85rem;text-transform:uppercase;margin-bottom:8px}
+.stat-card h2{font-size:2rem}
+.table-wrap{overflow-x:auto;border-radius:10px}
+table{width:100%;border-collapse:collapse;min-width:600px}
+th,td{padding:12px 16px;text-align:left;border-bottom:1px solid var(--bg3)}
+th{color:var(--text2);font-size:0.85rem;text-transform:uppercase}
+.badge{display:inline-block;padding:4px 10px;border-radius:20px;font-size:0.8rem;font-weight:600}
+.badge-admin{background:rgba(239,68,68,0.2);color:var(--danger)}
+.badge-teacher{background:rgba(245,158,11,0.2);color:var(--warning)}
+.badge-student{background:rgba(16,185,129,0.2);color:var(--accent2)}
+.toast{
+  position:fixed;bottom:24px;right:24px;background:var(--accent2);color:#fff;
+  padding:14px 20px;border-radius:10px;opacity:0;transform:translateY(20px);
+  transition:0.3s;z-index:1000;box-shadow:var(--shadow)
+}
+.toast.show{opacity:1;transform:translateY(0)}
+.toast.error{background:var(--danger)}
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:99}
+.overlay.show{display:block}
+.menu-toggle{display:none;background:var(--accent);border:none;color:#000;padding:10px 14px;border-radius:10px}
+.loading{display:inline-block;width:16px;height:16px;border:2px solid currentColor;border-top:transparent;border-radius:50%;animation:spin 0.8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media(max-width:768px){
+  .sidebar{left:-260px}
+  .sidebar.show{left:0}
+  .main{margin-left:0;padding:18px}
+  .menu-toggle{display:block}
+  .btn-group{flex-direction:column}
+</style>
+</head>
+
+<body>
+
+<div class="overlay" id="overlay"></div>
+<div class="toast" id="toast"></div>
+
+<!-- LOGIN -->
+<div id="loginPage" class="container">
+  <div class="card login-card">
+    <h2 style="margin-bottom:8px">SmartEdu Enterprise</h2>
+    <p style="color:var(--text2);margin-bottom:20px;font-size:0.9rem">School Management System</p>
+
+    <input id="email" type="email" placeholder="Email" autocomplete="email">
+    <input id="password" type="password" placeholder="Password" autocomplete="current-password">
+    
+    <select id="role">
+      <option value="admin">Admin</option>
+      <option value="teacher">Teacher</option>
+      <option value="student">Student</option>
+    </select>
+
+    <div class="btn-group" style="margin-top:16px">
+      <button class="btn" id="loginBtn">Login</button>
+      <button class="btn btn-secondary" id="registerBtn">Register</button>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" class="hidden">
+  <button class="menu-toggle" id="menuToggle" style="position:fixed;top:16px;left:16px;z-index:101">☰</button>
+
+  <div class="sidebar" id="sidebar">
+    <h3>SmartEdu</h3>
+    <button class="nav-btn active" data-page="dashboard">📊 Dashboard</button>
+    <button class="nav-btn" data-page="students">👨‍🎓 Students</button>
+    <button class="nav-btn" data-page="teachers" data-role="admin,teacher">👨‍🏫 Teachers</button>
+    <button class="nav-btn" data-page="attendance">📋 Attendance</button>
+    <button class="nav-btn" data-page="fees">💰 Fees</button>
+    <hr style="border:none;border-top:1px solid var(--bg3);margin:16px 0">
+    <button class="nav-btn" id="logoutBtn">🚪 Logout</button>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <h1 id="pageTitle">Dashboard</h1>
+      <div style="display:flex;align-items:center;gap:12px">
+        <span class="badge" id="userBadge">User</span>
+        <span id="userEmail" style="color:var(--text2);font-size:0.9rem"></span>
+      </div>
+    </div>
+
+    <div id="dashboard" class="page">
+      <div class="grid">
+        <div class="stat-card">
+          <h3>Total Students</h3>
+          <h2 id="totalStudents">0</h2>
+        </div>
+        <div class="stat-card">
+          <h3>Total Teachers</h3>
+          <h2 id="totalTeachers">0</h2>
+        </div>
+        <div class="stat-card">
+          <h3>Fees Collected</h3>
+          <h2 id="feesTotal">UGX 0</h2>
+        </div>
+        <div class="stat-card">
+          <h3>Today's Attendance</h3>
+          <h2 id="attendanceRate">0%</h2>
+        </div>
+      </div>
+    </div>
+
+    <div id="students" class="page hidden">
+      <div class="card">
+        <h2 style="margin-bottom:16px">Students</h2>
+        <div id="studentForm">
+          <input id="sName" placeholder="Student Name">
+          <input id="sClass" placeholder="Class e.g. S3A">
+          <button class="btn" id="addStudentBtn">Add Student</button>
+        </div>
+        <div class="table-wrap" style="margin-top:20px">
+          <table>
+            <thead><tr><th>Name</th><th>Class</th><th>Added</th><th>Action</th></tr></thead>
+            <tbody id="studentList"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div id="teachers" class="page hidden">
+      <div class="card">
+        <h2 style="margin-bottom:16px">Teachers</h2>
+        <div id="teacherForm">
+          <input id="tName" placeholder="Teacher Name">
+          <input id="tSubject" placeholder="Subject">
+          <button class="btn" id="addTeacherBtn">Add Teacher</button>
+        </div>
+        <div class="table-wrap" style="margin-top:20px">
+          <table>
+            <thead><tr><th>Name</th><th>Subject</th><th>Added</th><th>Action</th></tr></thead>
+            <tbody id="teacherList"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div id="attendance" class="page hidden">
+      <div class="card">
+        <h2>Attendance</h2>
+        <div id="attendanceList"></div>
+      </div>
+    </div>
+
+    <div id="fees" class="page hidden">
+      <div class="card">
+        <h2>Fees Management</h2>
+        <input id="feeStudent" placeholder="Student Name">
+        <input id="feeAmount" type="number" placeholder="Amount Paid" min="0">
+        <button class="btn" id="addFeeBtn">Record Payment</button>
+        <div class="table-wrap" style="margin-top:20px">
+          <table>
+            <thead><tr><th>Student</th><th>Amount</th><th>Date</th><th>Action</th></tr></thead>
+            <tbody id="feeList"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* FIREBASE CONFIG - FIXED */
+const firebaseConfig = {
+  apiKey: "AIzaSyCdirNElI9jmhlGhOmEg4UkhdmHhzprjyw",
+  authDomain: "billing-system-27bc6.firebaseapp.com",
+  projectId: "billing-system-27bc6",
+  storageBucket: "billing-system-27bc6.firebasestorage.app",
+  messagingSenderId: "852317046663",
+  appId: "1:852317046663:web:45cff5ac469552228b3522",
+  measurementId: "G-PZPXML3Y49"
+};
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+let currentUser = null;
+let userRole = 'student';
+let unsubscribers = [];
+
+document.addEventListener('DOMContentLoaded', ()=>{
+  attachEvents();
+  auth.onAuthStateChanged(async user=>{
+    if(user){
+      await showApp(user);
+    }else{
+      showLogin();
+    }
+  });
+});
+
+function attachEvents(){
+  document.getElementById('loginBtn').onclick = login;
+  document.getElementById('registerBtn').onclick = register;
+  document.getElementById('logoutBtn').onclick = logout;
+  document.getElementById('menuToggle').onclick = toggleSidebar;
+  document.getElementById('overlay').onclick = toggleSidebar;
+  
+  document.getElementById('addStudentBtn').onclick = addStudent;
+  document.getElementById('addTeacherBtn').onclick = addTeacher;
+  document.getElementById('addFeeBtn').onclick = addFee;
+
+  document.querySelectorAll('.nav-btn[data-page]').forEach(btn=>{
+    btn.onclick = (e)=>showPage(e.currentTarget.dataset.page, e.currentTarget);
+  });
+
+  document.getElementById('password').addEventListener('keydown', e=>{
+    if(e.key==='Enter') login();
+  });
+}
+
+async function login(){
+  const email = document.getElementById("email").value.trim();
+  const pass = document.getElementById("password").value.trim();
+  userRole = document.getElementById("role").value;
+
+  if(!email || !pass) return showToast("Enter email and password", "error");
+
+  try{
+    document.getElementById('loginBtn').innerHTML = '<span class="loading"></span> Logging in...';
+    await auth.signInWithEmailAndPassword(email,pass);
+  }catch(e){
+    showToast(e.message, "error");
+    document.getElementById('loginBtn').textContent = 'Login';
+  }
+}
+
+async function register(){
+  const email = document.getElementById("email").value.trim();
+  const pass = document.getElementById("password").value.trim();
+  userRole = document.getElementById("role").value;
+
+  if(!email || !pass) return showToast("Enter email and password", "error");
+  if(pass.length < 6) return showToast("Password must be 6+ characters", "error");
+
+  try{
+    document.getElementById('registerBtn').innerHTML = '<span class="loading"></span> Creating...';
+    await auth.createUserWithEmailAndPassword(email,pass);
+    showToast("Account created. Now login.");
+  }catch(e){
+    showToast(e.message, "error");
+    document.getElementById('registerBtn').textContent = 'Register';
+  }
+}
+
+async function showApp(user){
+  currentUser = user;
+  await saveUserRole(user.uid, userRole);
+  
+  document.getElementById("loginPage").classList.add("hidden");
+  document.getElementById("app").classList.remove("hidden");
+  document.getElementById("userEmail").textContent = user.email;
+  document.getElementById("userBadge").textContent = userRole;
+  document.getElementById("userBadge").className = `badge badge-${userRole}`;
+  
+  applyRolePermissions();
+  loadAll();
+}
+
+function showLogin(){
+  document.getElementById("loginPage").classList.remove("hidden");
+  document.getElementById("app").classList.add("hidden");
+  document.getElementById('loginBtn').textContent = 'Login';
+  document.getElementById('registerBtn').textContent = 'Register';
+}
+
+function logout(){
+  unsubscribers.forEach(unsub => unsub());
+  auth.signOut();
+}
+
+async function saveUserRole(uid, role){
+  await db.collection('users').doc(uid).set({role, email:auth.currentUser.email}, {merge:true});
+}
+
+function showPage(id, btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.add('hidden'));
+  document.getElementById(id).classList.remove('hidden');
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  document.getElementById('pageTitle').textContent = btn.textContent.trim().slice(2);
+  if(window.innerWidth<768) toggleSidebar();
+}
+
+function toggleSidebar(){
+  document.getElementById('sidebar').classList.toggle('show');
+  document.getElementById('overlay').classList.toggle('show');
+}
+
+function applyRolePermissions(){
+  document.querySelectorAll('[data-role]').forEach(el=>{
+    const allowed = el.dataset.role.split(',');
+    el.style.display = allowed.includes(userRole) ? '' : 'none';
+  });
+  
+  if(userRole==='student'){
+    document.getElementById('studentForm').style.display='none';
+    document.getElementById('teacherForm').style.display='none';
+  }
+}
+
+async function addStudent(){
+  const name = document.getElementById('sName').value.trim();
+  const cls = document.getElementById('sClass').value.trim();
+  
+  if(!name || !cls) return showToast("Fill all fields", "error");
+  if(userRole==='student') return showToast("No permission", "error");
+  
+  try{
+    await db.collection("students").add({
+      name,class:cls,
+      createdAt:firebase.firestore.FieldValue.serverTimestamp(),
+      createdBy:currentUser.uid
+    });
+    document.getElementById('sName').value='';
+    document.getElementById('sClass').value='';
+    showToast("Student added");
+  }catch(e){showToast(e.message,"error")}
+}
+
+async function addTeacher(){
+  const name = document.getElementById('tName').value.trim();
+  const subject = document.getElementById('tSubject').value.trim();
+  
+  if(!name || !subject) return showToast("Fill all fields", "error");
+  if(userRole!=='admin') return showToast("Admin only", "error");
+  
+  try{
+    await db.collection("teachers").add({
+      name,subject,
+      createdAt:firebase.firestore.FieldValue.serverTimestamp(),
+      createdBy:currentUser.uid
+    });
+    document.getElementById('tName').value='';
+    document.getElementById('tSubject').value='';
+    showToast("Teacher added");
+  }catch(e){showToast(e.message,"error")}
+}
+
+async function addFee(){
+  const student = document.getElementById('feeStudent').value.trim();
+  const amount = Number(document.getElementById('feeAmount').value);
+  
+  if(!student || !amount || amount<=0) return showToast("Enter valid data", "error");
+  
+  try{
+    await db.collection("fees").add({
+      student,amount,
+      createdAt:firebase.firestore.FieldValue.serverTimestamp(),
+      createdBy:currentUser.uid
+    });
+    document.getElementById('feeStudent').value='';
+    document.getElementById('feeAmount').value='';
+    showToast("Payment recorded");
+  }catch(e){showToast(e.message,"error")}
+}
+
+async function deleteDoc(collection,id){
+  if(!confirm("Delete this record?")) return;
+  if(userRole==='student') return showToast("No permission", "error");
+  
+  try{
+    await db.collection(collection).doc(id).delete();
+    showToast("Deleted");
+  }catch(e){showToast(e.message,"error")}
+}
+
+function loadAll(){
+  unsubscribers.forEach(unsub => unsub());
+  unsubscribers = [];
+  
+  const unsub1 = db.collection("students").orderBy('createdAt','desc').onSnapshot(snap=>{
+    document.getElementById("totalStudents").textContent = snap.size;
+    let html="";
+    snap.forEach(doc=>{
+      const d = doc.data();
+      const date = d.createdAt?new Date(d.createdAt.toDate()).toLocaleDateString():'-';
+      html+=`<tr>
+        <td>${d.name}</td>
+        <td>${d.class}</td>
+        <td>${date}</td>
+        <td><button class="btn btn-danger" style="padding:6px 12px;font-size:0.85rem" onclick="deleteDoc('students','${doc.id}')">Delete</button></td>
+      </tr>`;
+    });
+    document.getElementById("studentList").innerHTML = html || '<tr><td colspan="4" style="text-align:center;color:var(--text2)">No students</td></tr>';
+    loadAttendanceList(snap.docs);
+  });
+  unsubscribers.push(unsub1);
+
+  const unsub2 = db.collection("teachers").orderBy('createdAt','desc').onSnapshot(snap=>{
+    document.getElementById("totalTeachers").textContent = snap.size;
+    let html="";
+    snap.forEach(doc=>{
+      const d = doc.data();
+      const date = d.createdAt?new Date(d.createdAt.toDate()).toLocaleDateString():'-';
+      html+=`<tr>
+        <td>${d.name}</td>
+        <td>${d.subject}</td>
+        <td>${date}</td>
+        <td><button class="btn btn-danger" style="padding:6px 12px;font-size:0.85rem" onclick="deleteDoc('teachers','${doc.id}')">Delete</button></td>
+      </tr>`;
+    });
+    document.getElementById("teacherList").innerHTML = html || '<tr><td colspan="4" style="text-align:center;color:var(--text2)">No teachers</td></tr>';
+  });
+  unsubscribers.push(unsub2);
+
+  const unsub3 = db.collection("fees").orderBy('createdAt','desc').onSnapshot(snap=>{
+    let total=0;
+    let html="";
+    snap.forEach(doc=>{
+      const d = doc.data();
+      total += d.amount;
+      const date = d.createdAt?new Date(d.createdAt.toDate()).toLocaleDateString():'-';
+      html+=`<tr>
+        <td>${d.student}</td>
+        <td>UGX ${Number(d.amount).toLocaleString()}</td>
+        <td>${date}</td>
+        <td><button class="btn btn-danger" style="padding:6px 12px;font-size:0.85rem" onclick="deleteDoc('fees','${doc.id}')">Delete</button></td>
+      </tr>`;
+    });
+    document.getElementById("feesTotal").textContent = 'UGX '+total.toLocaleString();
+    document.getElementById("feeList").innerHTML = html || '<tr><td colspan="4" style="text-align:center;color:var(--text2)">No payments</td></tr>';
+  });
+  unsubscribers.push(unsub3);
+}
+
+function loadAttendanceList(studentDocs){
+  const container = document.getElementById('attendanceList');
+  
+  if(studentDocs.length===0){
+    container.innerHTML = '<p style="color:var(--text2)">No students to mark attendance</p>';
+    return;
+  }
+  
+  let html='';
+  studentDocs.forEach(doc=>{
+    const s = doc.data();
+    html+=`<div style="display:flex;justify-content:space-between;align-items:center;padding:12px;background:var(--bg3);border-radius:8px;margin-bottom:8px">
+      <span>${s.name} - ${s.class}</span>
+      <button class="btn btn-secondary" onclick="markAttendance('${doc.id}','${s.name}')">Mark Present</button>
+    </div>`;
+  });
+  container.innerHTML = html;
+}
+
+async function markAttendance(studentId,name){
+  const today = new Date().toISOString().split('T')[0];
+  try{
+    await db.collection('attendance').doc(`${studentId}_${today}`).set({
+      studentId,name,date:today,status:'Present',
+      createdAt:firebase.firestore.FieldValue.serverTimestamp()
+    });
+    showToast(`Marked ${name} present`);
+  }catch(e){showToast(e.message,"error")}
+}
+
+function showToast(msg,type='success'){
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.className = `toast ${type} show`;
+  setTimeout(()=>toast.classList.remove('show'),3000);
+}
+
+window.deleteDoc = deleteDoc;
+window.markAttendance = markAttendance;
+</script>
+
+</body>
+</html>
