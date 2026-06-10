@@ -541,7 +541,7 @@ async function staffLogin(){
 
     const cred = await auth.signInAnonymously();
     userRole = role;
-    userName = role;
+    userName = role; // FIX: Set userName for teachers/admin
     await db.collection('users').doc(cred.user.uid).set({
       role:role,name:role,loginTime:firebase.firestore.FieldValue.serverTimestamp()
     });
@@ -561,7 +561,7 @@ async function studentLogin(){
     document.getElementById('studentLoginBtn').innerHTML='<span class="loading"></span>Entering...';
     const cred = await auth.signInAnonymously();
     userRole='student';
-    userName=name;
+    userName=name; // This was already correct
     await db.collection('users').doc(cred.user.uid).set({
       role:'student',name:name,loginTime:firebase.firestore.FieldValue.serverTimestamp()
     });
@@ -900,102 +900,101 @@ document.addEventListener('contextmenu', e => {
 
 /* ================= FEEDBACK MODULE ================= */
 
-async function sendFeedback(){
-  const msg = document.getElementById('feedbackMsg').value.trim();
-  if(!msg)return showToast("Enter your feedback","error");
-
-  const btn = document.getElementById('sendFeedbackBtn');
-  btn.innerHTML = '<span class="loading"></span> Sending...';
-  btn.disabled = true;
-
-  try{
-    await db.collection('feedbacks').add({
-      message:msg,
-      senderName:currentUserName,
-      senderRole:userRole,
-      senderId:currentUser.uid,
-      createdAt:firebase.firestore.FieldValue.serverTimestamp()
-    });
-    document.getElementById('feedbackMsg').value='';
-    showToast("Feedback sent to admin");
-  }catch(e){
-    showToast(e.message,"error");
-  }finally{
-    btn.textContent = 'Send Feedback';
-    btn.disabled = false;
-  }
-}
-
-function loadMyFeedbacks(){
-  if(myFeedbackUnsub) myFeedbackUnsub();
-
-  myFeedbackUnsub = db.collection('feedbacks')
-   .where('senderId','==',currentUser.uid)
-   .orderBy('createdAt','desc')
-   .onSnapshot(snap=>{
-      let html = '';
-      if(snap.empty){
-        html = '<p style="color:var(--text2);text-align:center">No feedback sent yet</p>';
-      }else{
-        snap.forEach(doc=>{
-          const d = doc.data();
-          const date = d.createdAt?new Date(d.createdAt.toDate()).toLocaleString():'-';
-          html += `
-            <div class="feedback-card">
-              <div class="feedback-meta">Sent: ${date}</div>
-              <div class="feedback-msg">${d.message}</div>
-            </div>
-          `;
-        });
-      }
-      document.getElementById('myFeedbackList').innerHTML = html;
-    });
-}
-
-function loadAllFeedbacks(){
-  if(userRole!=='admin')return;
+function loadFeedback() {
   if(feedbackUnsub) feedbackUnsub();
 
-  const filter = document.getElementById('feedbackFilter')?.value || 'all';
-  let query = db.collection('feedbacks').orderBy('createdAt','desc');
-
-  feedbackUnsub = query.onSnapshot(snap=>{
-    let html = '';
-    if(snap.empty){
-      html = '<p style="color:var(--text2);text-align:center">No feedback received yet</p>';
-    }else{
-      snap.forEach(doc=>{
-        const d = doc.data();
-        if(filter!=='all' && d.senderRole!==filter) return;
-
-        const date = d.createdAt?new Date(d.createdAt.toDate()).toLocaleString():'-';
-        const roleBadge = d.senderRole==='student'
-         ?'<span class="badge badge-student">Student</span>'
-          :'<span class="badge badge-teacher">Teacher</span>';
-
-        html += `
-          <div class="feedback-card">
-            <div class="feedback-header">
-              <div>
-                <strong>${d.senderName}</strong> ${roleBadge}
-              </div>
-              <button class="btn btn-danger" style="padding:4px 10px;font-size:0.75rem;width:auto" onclick="deleteFeedback('${doc.id}')">Delete</button>
-            </div>
-            <div class="feedback-meta">Received: ${date}</div>
-            <div class="feedback-msg">${d.message}</div>
-          </div>
-        `;
-      });
-    }
-    if(html==='') html = '<p style="color:var(--text2);text-align:center">No feedback matching filter</p>';
-    document.getElementById('allFeedbackList').innerHTML = html;
+  feedbackUnsub = db.collection('feedback').orderBy('timestamp','desc').onSnapshot(snap => {
+    window.allFeedback = [];
+    snap.forEach(doc => {
+      window.allFeedback.push({id: doc.id,...doc.data()});
+    });
+    if(userRole === 'admin') renderFeedback('all');
   });
 }
 
-async function deleteFeedback(id){
-  if(userRole!=='admin')return showToast("Admin only","error");
-  if(!confirm("Delete this feedback?"))return;
-  await db.collection('feedbacks').doc(id).delete();
+function renderFeedback(filter) {
+  const list = document.getElementById('feedbackList');
+  let filtered = window.allFeedback || [];
+
+  if(filter!== 'all') {
+    filtered = filtered.filter(f => f.role === filter);
+  }
+
+  if(filtered.length === 0) {
+    list.innerHTML = '<p style="color:var(--text2);text-align:center">No feedback yet</p>';
+    return;
+  }
+
+  let html = '';
+  filtered.forEach(f => {
+    const date = f.timestamp? new Date(f.timestamp.toDate()).toLocaleString() : '-';
+    const badgeClass = f.role === 'teacher'? 'badge-teacher' : 'badge-student';
+    html += `
+      <div class="feedback-card">
+        <h4>${f.userName} <span class="badge ${badgeClass}">${f.role}</span></h4>
+        <div class="feedback-meta">Category: ${f.type} | ${date}</div>
+        <p>${f.message}</p>
+        <div class="feedback-actions">
+          ${f.resolved? '<span style="color:var(--accent2)">✓ Resolved</span>' :
+            `<button class="btn btn-success" onclick="markFeedbackResolved('${f.id}')">Mark Resolved</button>`}
+          <button class="btn btn-danger" onclick="deleteFeedback('${f.id}')">Delete</button>
+        </div>
+      </div>
+    `;
+  });
+  list.innerHTML = html;
+}
+
+function filterFeedback(role) {
+  renderFeedback(role);
+}
+
+async function submitFeedback(e) {
+  e.preventDefault();
+  if(userRole === 'admin') return showToast("Admins can't submit feedback", "error");
+
+  const type = document.getElementById('feedbackType').value;
+  const message = document.getElementById('feedbackMessage').value.trim();
+  
+  console.log('Submitting:', {type, message, userName, userRole}); // For debugging
+  
+  if(!type || !message) return showToast("Fill all fields", "error");
+  if(!userName || !currentUser) return showToast("Login error. Refresh page.", "error");
+
+  const btn = e.target.querySelector('button[type="submit"]');
+  btn.innerHTML = '<span class="loading"></span> Sending...';
+  btn.disabled = true;
+
+  try {
+    await db.collection('feedback').add({
+      role: userRole,
+      userId: currentUser.uid,
+      userName: userName,
+      type: type,
+      message: message,
+      resolved: false,
+      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    document.getElementById('feedbackForm').reset();
+    showToast("Feedback sent to admin");
+  } catch(e) {
+    console.error('Feedback error:', e);
+    showToast("Error: " + e.message, "error");
+  } finally {
+    btn.textContent = 'Send to Admin';
+    btn.disabled = false;
+  }
+}
+async function markFeedbackResolved(id) {
+  if(userRole!== 'admin') return;
+  await db.collection('feedback').doc(id).update({resolved: true});
+  showToast("Marked as resolved");
+}
+
+async function deleteFeedback(id) {
+  if(userRole!== 'admin') return showToast("Admin only", "error");
+  if(!confirm("Delete this feedback?")) return;
+  await db.collection('feedback').doc(id).delete();
   showToast("Feedback deleted");
 }
 
