@@ -998,6 +998,7 @@ async function deleteFeedback(id){
   await db.collection('feedbacks').doc(id).delete();
   showToast("Feedback deleted");
 }
+
 /* ================= BILLING MODULE - ADMIN ONLY ================= */
 
 function initBilling(){
