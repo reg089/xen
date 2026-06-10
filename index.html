@@ -3,36 +3,37 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>SmartEdu Enterprise</title>
+<title>School Mgt System</title>
 
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
 
 <style>
 :root{
-  --bg:#0f172a;--bg2:#1e293b;--bg3:#334155;--text:#e2e8f0;--text2:#94a3b8;
+  --bg:#E9ECAC;--bg2:#368ED6;--bg3:#92D1DE;--text:#0A1C20;--text2:#0A1C20;
   --accent:#38bdf8;--accent2:#10b981;--danger:#ef4444;--warning:#f59e0b;
-  --radius:12px;--shadow:0 8px 24px rgba(0,0,0,0.3)
+  --radius:22px;--shadow:0 8px 24px rgba(0,0,0,0.3)
 }
 *{margin:0;padding:0;box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
-body{background:var(--bg);color:var(--text);min-height:100vh}
+body{background:var(--bg);color:#0A1C20;min-height:100vh}
 .hidden{display:none!important}
 .container{max-width:1100px;margin:auto;padding:20px;min-height:100vh;display:flex;align-items:center;justify-content:center}
 .card{background:var(--bg2);padding:28px;border-radius:var(--radius);box-shadow:var(--shadow)}
 .login-card{width:100%;max-width:420px}
 input,select,button,textarea{
   width:100%;padding:12px 16px;margin:8px 0;border-radius:10px;
-  border:1px solid var(--bg3);background:var(--bg3);color:var(--text);
-  font-size:16px;outline:none;transition:0.2s
+  border:1px solid var(--bg3);background:var(--bg3);color:#0A1C20;
+  font-size:20px;outline:none;transition:0.2s
 }
 input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(56,189,248,0.2)}
 .btn{background:var(--accent);color:#000;font-weight:600;cursor:pointer;border:none}
 .btn:hover{opacity:0.9;transform:translateY(-1px)}
-.btn-secondary{background:var(--bg3);color:var(--text)}
+.btn-secondary{background:var(--bg3);color:#0A1C20}
 .btn-danger{background:var(--danger);color:#fff}
-.btn-group{display:flex;gap:10px}
-.btn-group button{flex:1}
+.btn-success{background:var(--accent2);color:#fff}
 .sidebar{
   width:260px;position:fixed;height:100vh;background:var(--bg2);
   padding:24px;border-right:1px solid var(--bg3);transition:0.3s;z-index:100
@@ -70,18 +71,110 @@ th{color:var(--text2);font-size:0.85rem;text-transform:uppercase}
 .overlay.show{display:block}
 .menu-toggle{display:none;background:var(--accent);border:none;color:#000;padding:10px 14px;border-radius:10px}
 .loading{display:inline-block;width:16px;height:16px;border:2px solid currentColor;border-top:transparent;border-radius:50%;animation:spin 0.8s linear infinite}
+.chat-box{height:300px;overflow-y:auto;background:var(--bg3);padding:12px;border-radius:10px;margin-bottom:12px}
+.chat-msg{margin:8px 0;padding:10px;border-radius:8px}
+.chat-msg.user{background:var(--accent);color:#000}
+.chat-msg.ai{background:var(--bg2)}
+.announcement-card{background:var(--bg3);padding:16px;border-radius:10px;margin-bottom:12px;position:relative}
+.announcement-card h4{margin-bottom:8px;color:var(--accent);padding-right:30px}
+.announcement-card p{margin-bottom:8px;color:var(--text2);white-space:pre-wrap}
+.announcement-file{display:inline-block;margin:4px 8px 4px 0;padding:6px 12px;background:var(--bg2);border-radius:8px;font-size:0.85rem;text-decoration:none;color:var(--text)}
+.announcement-file:hover{background:var(--accent);color:#000}
+.announcement-meta{font-size:0.75rem;color:var(--text2);margin-top:8px}
+.delete-ann{position:absolute;top:12px;right:12px;background:var(--danger);border:none;color:#fff;padding:4px 8px;border-radius:6px;cursor:pointer;font-size:0.75rem}
+.delete-ann:hover{opacity:0.8}
+.attendance-row{display:flex;justify-content:space-between;align-items:center;padding:12px;border-bottom:1px solid var(--bg3);flex-wrap:wrap;gap:8px}
+.attendance-actions{display:flex;gap:8px}
+.attendance-actions button{padding:6px 14px;width:auto;font-size:0.85rem}
+
+/* E-Library Styles */
+.book-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:16px;margin-top:16px}
+.book-card{background:var(--bg3);padding:16px;border-radius:10px;text-align:center;transition:0.2s}
+.book-card:hover{transform:translateY(-4px);box-shadow:var(--shadow)}
+.book-card img{width:100%;height:200px;object-fit:cover;border-radius:8px;margin-bottom:12px;background:var(--bg2)}
+.book-card h3{font-size:1rem;margin-bottom:8px;color:var(--text)}
+.book-reader-modal{position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:200;display:none;align-items:center;justify-content:center}
+.book-reader-content{width:95%;height:95%;background:var(--bg2);border-radius:12px;display:flex;flex-direction:column}
+.reader-header{display:flex;justify-content:space-between;align-items:center;padding:16px;border-bottom:1px solid var(--bg3)}
+.reader-header span{font-weight:600;font-size:1.1rem}
+.reader-header button{width:auto;padding:8px 16px}
+.book-frame{flex:1;border:none;width:100%}
+
+/* Feedback Styles */
+.feedback-card{background:var(--bg3);padding:16px;border-radius:10px;margin-bottom:12px}
+.feedback-card h4{color:var(--accent);margin-bottom:4px}
+.feedback-meta{font-size:0.75rem;color:var(--text2);margin-bottom:8px}
+.feedback-card p{color:var(--text);white-space:pre-wrap}
+.feedback-actions{display:flex;gap:8px;margin-top:12px}
+.feedback-actions button{width:auto;padding:6px 12px;font-size:0.85rem}
+
+/* Billing Layout Styles - Scoped to #billingWrapper */
+#billingWrapper *{margin:0;padding:0;box-sizing:border-box;font-family:system-ui,'Segoe UI','Inter','Roboto',sans-serif}
+#billingWrapper{color:#0f172a}
+#billingWrapper .container{max-width:1500px;margin:0 auto;display:block}
+#billingWrapper .header{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;margin-bottom:1.8rem}
+#billingWrapper h1{font-size:1.8rem;font-weight:700;background:linear-gradient(135deg,#14532d,#1e3a8a);background-clip:text;-webkit-background-clip:text;color:transparent;display:flex;align-items:center;gap:8px}
+#billingWrapper .action-buttons{display:flex;gap:0.75rem;flex-wrap:wrap;align-items:center}
+#billingWrapper .sync-status{font-size:0.8rem;color:#14532d;font-weight:500}
+#billingWrapper button{background:white;border:1px solid #e2e8f0;padding:0.5rem 1rem;border-radius:40px;font-weight:500;font-size:0.85rem;cursor:pointer;transition:all 0.15s ease;color:#0f172a}
+#billingWrapper button:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,0.08)}
+#billingWrapper button.primary{background:#14532d;color:white;border:none;box-shadow:0 2px 5px rgba(0,0,0,0.1)}
+#billingWrapper button.primary:hover{background:#166534}
+#billingWrapper button.danger{background:#fee2e2;color:#b91c1c;border-color:#fecaca}
+#billingWrapper button.danger:hover{background:#fecaca}
+#billingWrapper button.outline{background:transparent;border:1px solid #cbd5e1}
+#billingWrapper .summary-cards{display:flex;gap:1.5rem;flex-wrap:wrap;margin-bottom:2rem}
+#billingWrapper .card{background:white;border-radius:24px;padding:1.2rem 1.8rem;flex:1;min-width:180px;box-shadow:0 4px 12px rgba(0,0,0,0.03);border:1px solid #e2edf2}
+#billingWrapper .card h3{font-size:0.8rem;font-weight:500;text-transform:uppercase;letter-spacing:0.5px;color:#2d4a22;margin-bottom:0.5rem}
+#billingWrapper .card .amount{font-size:1.8rem;font-weight:700;color:#0f172a}
+#billingWrapper .dashboard{display:flex;flex-wrap:wrap;gap:1.8rem}
+#billingWrapper .students-panel{flex:1.2;min-width:300px;background:white;border-radius:28px;padding:1.2rem;border:1px solid #e2edf2;box-shadow:0 8px 20px rgba(0,0,0,0.02);height:fit-content}
+#billingWrapper .detail-panel{flex:2.5;min-width:340px;background:white;border-radius:28px;padding:1.2rem 1.5rem;border:1px solid #e2edf2}
+#billingWrapper .panel-title{font-size:1.2rem;font-weight:600;margin-bottom:1rem;display:flex;align-items:center;gap:0.5rem;border-left:4px solid #14532d;padding-left:0.75rem;color:#0f172a}
+#billingWrapper .search-box{margin-bottom:1.2rem;width:100%}
+#billingWrapper .search-box input{width:100%;padding:0.7rem 1rem;border-radius:40px;border:1px solid #cbd5e1;font-size:0.85rem;background:#ffffff;outline:none;color:#0f172a}
+#billingWrapper .search-box input:focus{border-color:#14532d;box-shadow:0 0 0 3px rgba(20,83,45,0.15)}
+#billingWrapper .student-list{display:flex;flex-direction:column;gap:0.7rem;max-height:55vh;overflow-y:auto;padding-right:4px}
+#billingWrapper .student-item{background:#fafcff;border-radius:20px;padding:0.7rem;display:flex;align-items:center;gap:12px;border:1px solid #e9edf2;cursor:pointer;transition:all 0.15s}
+#billingWrapper .student-item:hover{background:#f1f5f9}
+#billingWrapper .student-item.selected{background:#eef4ea;border-left:5px solid #14532d}
+#billingWrapper .student-avatar{width:48px;height:48px;border-radius:50%;object-fit:cover;background:#e4e9f0;flex-shrink:0;border:1px solid #cfdec5}
+#billingWrapper .student-info{flex:1}
+#billingWrapper .student-info h4{font-size:0.95rem;font-weight:600;color:#0f172a}
+#billingWrapper .student-info p{font-size:0.7rem;color:#4a5b3c}
+#billingWrapper .balance-badge{font-weight:700;font-size:0.8rem;background:white;padding:0.2rem 0.6rem;border-radius:30px;white-space:nowrap;color:#0f172a}
+#billingWrapper .form-row{display:flex;flex-wrap:wrap;gap:0.8rem;margin-bottom:1rem;align-items:flex-end}
+#billingWrapper .form-group{flex:1;min-width:120px}
+#billingWrapper label{font-size:0.7rem;font-weight:500;text-transform:uppercase;color:#2b4b1e;display:block}
+#billingWrapper input,#billingWrapper select{width:100%;padding:0.6rem 0.8rem;border-radius:16px;border:1px solid #cbd5e1;background:white;font-size:0.85rem;margin-top:4px;color:#0f172a}
+#billingWrapper input:focus,#billingWrapper select:focus{outline:none;border-color:#14532d;box-shadow:0 0 0 3px rgba(20,83,45,0.15)}
+#billingWrapper .fee-table,#billingWrapper .payment-table{width:100%;border-collapse:collapse;font-size:0.8rem;margin-top:0.5rem}
+#billingWrapper .fee-table th,#billingWrapper .payment-table th{text-align:left;padding:0.5rem 0.2rem;border-bottom:1px solid #e2e8f0;color:#2b4b1e}
+#billingWrapper .fee-table td,#billingWrapper .payment-table td{padding:0.6rem 0.2rem;border-bottom:1px solid #f1f5f9;color:#0f172a}
+#billingWrapper .delete-icon{color:#b91c1c;cursor:pointer;background:none;border:none;font-size:1.2rem}
+#billingWrapper .delete-icon:hover{color:#dc2626}
+#billingWrapper .empty-message{color:#8ba17a;font-size:0.8rem;padding:1rem 0;text-align:center}
+#billingWrapper hr{margin:1rem 0;border-color:#e2edf2}
+#billingWrapper .notification{position:fixed;bottom:20px;right:20px;background:#1e293b;color:white;padding:0.6rem 1.2rem;border-radius:40px;font-size:0.8rem;z-index:1000;opacity:0;transition:0.2s;pointer-events:none}
+#billingWrapper .method-mtn{background:#ffe6cc;color:#cc7b00;padding:2px 8px;border-radius:30px;font-size:0.7rem}
+#billingWrapper .method-airtel{background:#ffe0f0;color:#b3005e;padding:2px 8px;border-radius:30px;font-size:0.7rem}
+#billingWrapper .method-cash{background:#e0f2e9;color:#0e6b3e;padding:2px 8px;border-radius:30px;font-size:0.7rem}
+#billingWrapper .method-bank{background:#e6f0fa;color:#0066b3;padding:2px 8px;border-radius:30px;font-size:0.7rem}
+@media print{
+  #billingWrapper .action-buttons,#billingWrapper .students-panel,#billingWrapper .search-box,#billingWrapper .summary-cards,#billingWrapper .notification{display:none!important}
+}
+
 @keyframes spin{to{transform:rotate(360deg)}}
 @media(max-width:768px){
-  .sidebar{left:-260px}
-  .sidebar.show{left:0}
-  .main{margin-left:0;padding:18px}
-  .menu-toggle{display:block}
-  .btn-group{flex-direction:column}
+.sidebar{left:-260px}
+.sidebar.show{left:0}
+.main{margin-left:0;padding:18px}
+.menu-toggle{display:block}
+}
 </style>
 </head>
 
 <body>
-
 <div class="overlay" id="overlay"></div>
 <div class="toast" id="toast"></div>
 
@@ -91,18 +184,21 @@ th{color:var(--text2);font-size:0.85rem;text-transform:uppercase}
     <h2 style="margin-bottom:8px">SmartEdu Enterprise</h2>
     <p style="color:var(--text2);margin-bottom:20px;font-size:0.9rem">School Management System</p>
 
-    <input id="email" type="email" placeholder="Email" autocomplete="email">
-    <input id="password" type="password" placeholder="Password" autocomplete="current-password">
-    
-    <select id="role">
-      <option value="admin">Admin</option>
-      <option value="teacher">Teacher</option>
-      <option value="student">Student</option>
-    </select>
+    <div id="staffLogin">
+      <select id="staffRole">
+        <option value="admin">Admin</option>
+        <option value="teacher">Teacher</option>
+      </select>
+      <input id="staffPass" type="password" placeholder="Enter password">
+      <button class="btn" id="staffLoginBtn">Login</button>
+    </div>
 
-    <div class="btn-group" style="margin-top:16px">
-      <button class="btn" id="loginBtn">Login</button>
-      <button class="btn btn-secondary" id="registerBtn">Register</button>
+    <hr style="border:none;border-top:1px solid var(--bg3);margin:20px 0">
+
+    <div id="studentLogin">
+      <input id="studentName" type="text" placeholder="Enter your name">
+      <button class="btn btn-secondary" id="studentLoginBtn">Enter as Student</button>
+      <p style="color:var(--text2);font-size:0.8rem;margin-top:8px">No password needed</p>
     </div>
   </div>
 </div>
@@ -114,10 +210,13 @@ th{color:var(--text2);font-size:0.85rem;text-transform:uppercase}
   <div class="sidebar" id="sidebar">
     <h3>SmartEdu</h3>
     <button class="nav-btn active" data-page="dashboard">📊 Dashboard</button>
-    <button class="nav-btn" data-page="students">👨‍🎓 Students</button>
-    <button class="nav-btn" data-page="teachers" data-role="admin,teacher">👨‍🏫 Teachers</button>
-    <button class="nav-btn" data-page="attendance">📋 Attendance</button>
-    <button class="nav-btn" data-page="fees">💰 Fees</button>
+    <button class="nav-btn" data-page="students" id="studentsNav">👨🎓 Students</button>
+    <button class="nav-btn" data-page="teachers" id="teachersNav">👨🏫 Teachers</button>
+    <button class="nav-btn" data-page="attendance" id="attendanceNav">📋 Attendance</button>
+    <button class="nav-btn" id="elibraryNav" data-page="elibrary">📚 E-Library</button>
+    <button class="nav-btn" id="feesNav" data-page="fees">💰 Fees</button>
+    <button class="nav-btn" id="feedbackNav" data-page="feedback">💬 Feedback</button>
+    <button class="nav-btn" id="aiNav" data-page="ai">🤖 AI Help</button>
     <hr style="border:none;border-top:1px solid var(--bg3);margin:16px 0">
     <button class="nav-btn" id="logoutBtn">🚪 Logout</button>
   </div>
@@ -132,22 +231,37 @@ th{color:var(--text2);font-size:0.85rem;text-transform:uppercase}
     </div>
 
     <div id="dashboard" class="page">
-      <div class="grid">
-        <div class="stat-card">
-          <h3>Total Students</h3>
-          <h2 id="totalStudents">0</h2>
-        </div>
-        <div class="stat-card">
-          <h3>Total Teachers</h3>
-          <h2 id="totalTeachers">0</h2>
-        </div>
-        <div class="stat-card">
-          <h3>Fees Collected</h3>
-          <h2 id="feesTotal">UGX 0</h2>
-        </div>
-        <div class="stat-card">
-          <h3>Today's Attendance</h3>
-          <h2 id="attendanceRate">0%</h2>
+      <div class="grid" id="statsGrid">
+        <div class="stat-card"><h3>Total Students</h3><h2 id="totalStudents">0</h2></div>
+        <div class="stat-card"><h3>Total Teachers</h3><h2 id="totalTeachers">0</h2></div>
+        <div class="stat-card"><h3>Books in Library</h3><h2 id="totalBooks">0</h2></div>
+        <div class="stat-card" id="feesStatCard"><h3>Fees Collected</h3><h2 id="feesTotal">UGX 0</h2></div>
+        <div class="stat-card"><h3>Today's Attendance</h3><h2 id="attendanceRate">0%</h2></div>
+      </div>
+
+      <!-- ANNOUNCEMENTS FEED -->
+      <div class="card" id="announcementFeed" style="margin-top:16px">
+        <h2 style="margin-bottom:16px">📢 Announcements</h2>
+        <div id="announcementList"></div>
+      </div>
+
+      <!-- ADMIN ANNOUNCEMENT CONTROLS -->
+      <div id="adminAnnouncementControls" class="hidden">
+        <div class="grid" style="margin-top:16px">
+          <div class="card">
+            <h3 style="margin-bottom:16px">📤 Send to Students</h3>
+            <input id="studentAnnTitle" placeholder="Title">
+            <textarea id="studentAnnMsg" rows="4" placeholder="Message..."></textarea>
+            <input type="file" id="studentAnnFiles" multiple accept="image/*,.pdf">
+            <button class="btn" id="sendStudentAnnBtn">Send to Students</button>
+          </div>
+          <div class="card">
+            <h3 style="margin-bottom:16px">📤 Send to Teachers</h3>
+            <input id="teacherAnnTitle" placeholder="Title">
+            <textarea id="teacherAnnMsg" rows="4" placeholder="Message..."></textarea>
+            <input type="file" id="teacherAnnFiles" multiple accept="image/*,.pdf">
+            <button class="btn" id="sendTeacherAnnBtn">Send to Teachers</button>
+          </div>
         </div>
       </div>
     </div>
@@ -162,7 +276,7 @@ th{color:var(--text2);font-size:0.85rem;text-transform:uppercase}
         </div>
         <div class="table-wrap" style="margin-top:20px">
           <table>
-            <thead><tr><th>Name</th><th>Class</th><th>Added</th><th>Action</th></tr></thead>
+            <thead><tr><th>Name</th><th>Class</th><th>Added</th><th id="actionHeader">Action</th></tr></thead>
             <tbody id="studentList"></tbody>
           </table>
         </div>
@@ -193,30 +307,157 @@ th{color:var(--text2);font-size:0.85rem;text-transform:uppercase}
       </div>
     </div>
 
-    <div id="fees" class="page hidden">
+    <!-- E-LIBRARY PAGE -->
+    <div id="elibrary" class="page hidden">
       <div class="card">
-        <h2>Fees Management</h2>
-        <input id="feeStudent" placeholder="Student Name">
-        <input id="feeAmount" type="number" placeholder="Amount Paid" min="0">
-        <button class="btn" id="addFeeBtn">Record Payment</button>
-        <div class="table-wrap" style="margin-top:20px">
-          <table>
-            <thead><tr><th>Student</th><th>Amount</th><th>Date</th><th>Action</th></tr></thead>
-            <tbody id="feeList"></tbody>
-          </table>
+        <h2 style="margin-bottom:16px">📚 E-Library</h2>
+        <p style="color:var(--text2);margin-bottom:16px">Read books online. Downloads are disabled to protect content.</p>
+
+        <div id="adminBookForm" class="hidden" style="margin-bottom:20px">
+          <h3 style="margin-bottom:12px">Add New Book</h3>
+          <input id="bookTitle" placeholder="Book Title">
+          <input id="bookSubject" placeholder="Subject/Grade">
+          <input type="file" id="bookFile" accept=".pdf">
+          <button class="btn" id="addBookBtn">Upload Book</button>
+        </div>
+
+        <div class="book-grid" id="bookGrid"></div>
+      </div>
+    </div>
+
+    <!-- FEES PAGE - ADMIN ONLY -->
+    <div id="fees" class="page hidden">
+      <div id="billingWrapper" style="background:#f0f3f8;padding:1.5rem;margin:-28px;border-radius:12px;min-height:calc(100vh - 120px)">
+        <div class="container" id="billingContainer">
+          <div class="header">
+            <h1>📚 SmartEdu Billing System <span style="font-size:1rem">🇺🇬 UGX</span></h1>
+            <div class="action-buttons">
+              <span id="billingSyncStatus" class="sync-status">☁ Connecting...</span>
+              <input type="file" id="billingExcelFile" accept=".xlsx,.xls" hidden>
+              <button id="billingImportBtn">📁 Import Excel</button>
+              <button id="billingExportExcelBtn" class="outline">📊 Export Excel</button>
+              <button id="billingPrintBtn" class="outline">🖨 Print Report</button>
+              <button id="billingClearAllBtn" class="danger">🗑 Clear All</button>
+            </div>
+          </div>
+
+          <div class="summary-cards">
+            <div class="card"><h3>💰 Total Collected (UGX)</h3><div class="amount" id="billingTotalCollected">UGX 0</div></div>
+            <div class="card"><h3>📌 Total Pending (UGX)</h3><div class="amount" id="billingTotalPending">UGX 0</div></div>
+            <div class="card"><h3>🎓 Active Students</h3><div class="amount" id="billingStudentCount">0</div></div>
+          </div>
+
+          <div class="dashboard">
+            <div class="students-panel">
+              <div class="panel-title">👥 Students</div>
+              <div class="search-box">
+                <input type="text" id="billingSearchStudentInput" placeholder="🔍 Search by name or class..." autocomplete="off">
+              </div>
+              <div id="billingStudentListContainer" class="student-list"></div>
+              <hr>
+              <div style="margin-top:1rem" id="billingAddStudentForm">
+                <div style="font-weight:500;margin-bottom:0.5rem">➕ Add New Student</div>
+                <div class="form-row">
+                  <div class="form-group"><label>Full Name</label><input type="text" id="billingStudentName" placeholder="e.g., Nakato Grace"></div>
+                  <div class="form-group"><label>Class / Grade</label><input type="text" id="billingStudentClass" placeholder="Senior 2"></div>
+                  <div style="flex:0.3">
+                    <button id="billingAddStudentBtn" class="primary" style="width:100%;margin-top:1.4rem">Add</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="detail-panel" id="billingDetailPanel">
+              <div class="panel-title">📋 Student Profile & Billing</div>
+              <div id="billingSelectedStudentView">
+                <div class="empty-message" style="padding:2rem">👈 Select a student from the list to manage fees, payments</div>
+              </div>
+            </div>
+          </div>
+        <div id="billingNotificationToast" class="notification">✅ Action completed</div>
+      </div>
+    </div>
+
+    <!-- FEEDBACK PAGE -->
+    <div id="feedback" class="page hidden">
+      <div class="card" id="feedbackFormCard">
+        <h2 style="margin-bottom:16px">💬 Send Feedback</h2>
+        <p style="color:var(--text2);margin-bottom:16px">Share suggestions or report issues. Admin will receive your message.</p>
+        <form id="feedbackForm">
+          <select id="feedbackType" required>
+            <option value="">Select Category</option>
+            <option value="suggestion">Suggestion</option>
+            <option value="issue">Report an Issue</option>
+            <option value="library">E-Library Feedback</option>
+            <option value="other">Other</option>
+          </select>
+          <textarea id="feedbackMessage" rows="5" required placeholder="Type your feedback here..."></textarea>
+          <button class="btn" type="submit">Send to Admin</button>
+        </form>
+      </div>
+
+      <div class="card hidden" id="adminFeedbackView" style="margin-top:16px">
+        <h2 style="margin-bottom:16px">📥 Received Feedback</h2>
+        <div style="margin-bottom:16px">
+          <button class="btn btn-secondary" onclick="filterFeedback('all')" style="width:auto;margin-right:8px">All</button>
+          <button class="btn btn-secondary" onclick="filterFeedback('student')" style="width:auto;margin-right:8px">Students</button>
+          <button class="btn btn-secondary" onclick="filterFeedback('teacher')" style="width:auto">Teachers</button>
+        </div>
+        <div id="feedbackList"></div>
+      </div>
+    </div>
+
+    <!-- AI PAGE -->
+    <div id="ai" class="page hidden">
+      <div class="card">
+        <h2 style="margin-bottom:10px">🤖 SmartEdu AI Assistant</h2>
+        <p style="color:var(--text2);margin-bottom:16px">
+          Ask any assignment or revision question.
+        </p>
+        <div class="chat-box" id="chatBox">
+          <div class="chat-msg ai">
+            👋 Hello Student! <br><br>
+            I can help you with:
+            <br>• Mathematics
+            <br>• English
+            <br>• ICT
+            <br>• Science
+            <br>• History
+            <br>• Assignments
+            <br>• Revision
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <input id="chatInput" placeholder="Type your assignment question..." style="flex:1">
+          <button class="btn" id="sendChatBtn" style="width:auto;padding:12px 20px">Send</button>
         </div>
       </div>
     </div>
   </div>
 </div>
 
+<!-- Book Reader Modal -->
+<div id="bookReader" class="book-reader-modal">
+  <div class="book-reader-content">
+    <div class="reader-header">
+      <span id="readerBookTitle">Book Title</span>
+      <button class="btn btn-danger" onclick="closeBookReader()">✕ Close</button>
+    </div>
+    <iframe id="bookFrame" class="book-frame" sandbox="allow-scripts allow-same-origin"></iframe>
+  </div>
+</div>
+
 <script>
-/* FIREBASE CONFIG - FIXED */
+// ===== CHANGE THESE PASSWORDS =====
+const ADMIN_PASS = "admin123";
+const TEACHER_PASS = "teacher123";
+// ==================================
+
 const firebaseConfig = {
   apiKey: "AIzaSyCdirNElI9jmhlGhOmEg4UkhdmHhzprjyw",
   authDomain: "billing-system-27bc6.firebaseapp.com",
   projectId: "billing-system-27bc6",
-  storageBucket: "billing-system-27bc6.firebasestorage.app",
+  storageBucket: "billing-system-27bc6.appspot.com",
   messagingSenderId: "852317046663",
   appId: "1:852317046663:web:45cff5ac469552228b3522",
   measurementId: "G-PZPXML3Y49"
@@ -225,113 +466,173 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
+const storage = firebase.storage();
+auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
 
 let currentUser = null;
 let userRole = 'student';
+let userName = '';
 let unsubscribers = [];
+let announcementUnsub = null;
+let bookUnsub = null;
+let feedbackUnsub = null;
+
+// BILLING VARIABLES
+let billingSchoolData = {students:[]};
+let billingSearchQuery = "";
+let billingSelectedStudentId = null;
+let billingUnsub = null;
 
 document.addEventListener('DOMContentLoaded', ()=>{
   attachEvents();
-  auth.onAuthStateChanged(async user=>{
-    if(user){
-      await showApp(user);
-    }else{
-      showLogin();
-    }
-  });
+  const savedUid = localStorage.getItem('smartedu_uid');
+  if(savedUid){
+    auth.signInAnonymously().then(cred=>showApp(cred.user)).catch(()=>showLogin());
+  }
 });
 
 function attachEvents(){
-  document.getElementById('loginBtn').onclick = login;
-  document.getElementById('registerBtn').onclick = register;
-  document.getElementById('logoutBtn').onclick = logout;
-  document.getElementById('menuToggle').onclick = toggleSidebar;
-  document.getElementById('overlay').onclick = toggleSidebar;
-  
-  document.getElementById('addStudentBtn').onclick = addStudent;
-  document.getElementById('addTeacherBtn').onclick = addTeacher;
-  document.getElementById('addFeeBtn').onclick = addFee;
+  const get = id => document.getElementById(id);
+
+  get('staffLoginBtn')?.addEventListener('click', staffLogin);
+  get('studentLoginBtn')?.addEventListener('click', studentLogin);
+  get('logoutBtn')?.addEventListener('click', logout);
+  get('menuToggle')?.addEventListener('click', toggleSidebar);
+  get('overlay')?.addEventListener('click', toggleSidebar);
+  get('addStudentBtn')?.addEventListener('click', addStudent);
+  get('addTeacherBtn')?.addEventListener('click', addTeacher);
+  get('sendChatBtn')?.addEventListener('click', sendChat);
+  get('sendStudentAnnBtn')?.addEventListener('click', ()=>sendAnnouncement('student'));
+  get('sendTeacherAnnBtn')?.addEventListener('click', ()=>sendAnnouncement('teacher'));
+  get('addBookBtn')?.addEventListener('click', addBook);
+  get('feedbackForm')?.addEventListener('submit', submitFeedback);
+
+  get('chatInput')?.addEventListener('keypress', e=>{
+    if(e.key === 'Enter'){ sendChat(); }
+  });
 
   document.querySelectorAll('.nav-btn[data-page]').forEach(btn=>{
-    btn.onclick = (e)=>showPage(e.currentTarget.dataset.page, e.currentTarget);
+    btn.addEventListener('click', (e)=>showPage(e.currentTarget.dataset.page, e.currentTarget));
   });
 
-  document.getElementById('password').addEventListener('keydown', e=>{
-    if(e.key==='Enter') login();
+  // BILLING EVENTS
+  get('billingAddStudentBtn')?.addEventListener('click', billingAddStudent);
+  get('billingSearchStudentInput')?.addEventListener('input', e => {
+    billingSearchQuery = e.target.value;
+    billingRenderStudentList();
   });
+  get('billingImportBtn')?.addEventListener('click', ()=>get('billingExcelFile').click());
+  get('billingPrintBtn')?.addEventListener('click', ()=>window.print());
+
+get('billingExportExcelBtn')?.addEventListener('click', billingExportExcel);
+  get('billingClearAllBtn')?.addEventListener('click', billingClearAll);
+  get('billingExcelFile')?.addEventListener('change', billingImportExcel);
 }
 
-async function login(){
-  const email = document.getElementById("email").value.trim();
-  const pass = document.getElementById("password").value.trim();
-  userRole = document.getElementById("role").value;
-
-  if(!email || !pass) return showToast("Enter email and password", "error");
+async function staffLogin(){
+  const role = document.getElementById("staffRole").value;
+  const pass = document.getElementById("staffPass").value.trim();
+  if(!pass) return showToast("Enter password", "error");
 
   try{
-    document.getElementById('loginBtn').innerHTML = '<span class="loading"></span> Logging in...';
-    await auth.signInWithEmailAndPassword(email,pass);
+    document.getElementById('staffLoginBtn').innerHTML = '<span class="loading"></span> Checking...';
+    const correctPass = role === 'admin'? ADMIN_PASS : TEACHER_PASS;
+    if(pass!== correctPass) throw new Error("Wrong password");
+
+    const cred = await auth.signInAnonymously();
+    userRole = role;
+    userName = role;
+    await db.collection('users').doc(cred.user.uid).set({
+      role:role,name:role,loginTime:firebase.firestore.FieldValue.serverTimestamp()
+    });
+    localStorage.setItem('smartedu_uid', cred.user.uid);
+    showApp(cred.user);
   }catch(e){
-    showToast(e.message, "error");
-    document.getElementById('loginBtn').textContent = 'Login';
+    showToast(e.message,"error");
+    document.getElementById('staffLoginBtn').textContent='Login';
   }
 }
 
-async function register(){
-  const email = document.getElementById("email").value.trim();
-  const pass = document.getElementById("password").value.trim();
-  userRole = document.getElementById("role").value;
-
-  if(!email || !pass) return showToast("Enter email and password", "error");
-  if(pass.length < 6) return showToast("Password must be 6+ characters", "error");
+async function studentLogin(){
+  const name = document.getElementById("studentName").value.trim();
+  if(!name) return showToast("Enter your name","error");
 
   try{
-    document.getElementById('registerBtn').innerHTML = '<span class="loading"></span> Creating...';
-    await auth.createUserWithEmailAndPassword(email,pass);
-    showToast("Account created. Now login.");
+    document.getElementById('studentLoginBtn').innerHTML='<span class="loading"></span>Entering...';
+    const cred = await auth.signInAnonymously();
+    userRole='student';
+    userName=name;
+    await db.collection('users').doc(cred.user.uid).set({
+      role:'student',name:name,loginTime:firebase.firestore.FieldValue.serverTimestamp()
+    });
+    const existing=await db.collection('students').where('uid','==',cred.user.uid).get();
+    if(existing.empty){
+      await db.collection('students').add({
+        name:name,class:'',uid:cred.user.uid,
+        createdAt:firebase.firestore.FieldValue.serverTimestamp(),
+        createdBy:cred.user.uid
+      });
+    }
+    localStorage.setItem('smartedu_uid',cred.user.uid);
+    showApp(cred.user);
+
+    setTimeout(()=>{
+      const aiBtn = document.getElementById('aiNav');
+      if(aiBtn){ aiBtn.click(); }
+    },500);
+
   }catch(e){
-    showToast(e.message, "error");
-    document.getElementById('registerBtn').textContent = 'Register';
+    showToast(e.message,"error");
+    document.getElementById('studentLoginBtn').textContent='Enter as Student';
   }
 }
 
 async function showApp(user){
-  currentUser = user;
-  await saveUserRole(user.uid, userRole);
-  
+  currentUser=user;
   document.getElementById("loginPage").classList.add("hidden");
   document.getElementById("app").classList.remove("hidden");
-  document.getElementById("userEmail").textContent = user.email;
-  document.getElementById("userBadge").textContent = userRole;
-  document.getElementById("userBadge").className = `badge badge-${userRole}`;
-  
+
+  const userDoc=await db.collection('users').doc(user.uid).get();
+  userRole=userDoc.data().role;
+  userName=userDoc.data().name;
+
+  document.getElementById("userEmail").textContent=userDoc.data().name;
+  document.getElementById("userBadge").textContent=userRole;
+  document.getElementById("userBadge").className=`badge badge-${userRole}`;
+
   applyRolePermissions();
-  loadAll();
+  loadData();
+  loadAnnouncements();
+  loadBooks();
+  loadFeedback();
+  if(userRole === 'admin') initBilling();
 }
 
 function showLogin(){
   document.getElementById("loginPage").classList.remove("hidden");
   document.getElementById("app").classList.add("hidden");
-  document.getElementById('loginBtn').textContent = 'Login';
-  document.getElementById('registerBtn').textContent = 'Register';
+  document.getElementById('staffLoginBtn').textContent='Login';
+  document.getElementById('studentLoginBtn').textContent='Enter as Student';
 }
 
 function logout(){
-  unsubscribers.forEach(unsub => unsub());
+  unsubscribers.forEach(unsub=>unsub());
+  if(announcementUnsub)announcementUnsub();
+  if(bookUnsub)bookUnsub();
+  if(feedbackUnsub)feedbackUnsub();
+  if(billingUnsub)billingUnsub();
+  localStorage.removeItem('smartedu_uid');
   auth.signOut();
+  showLogin();
 }
 
-async function saveUserRole(uid, role){
-  await db.collection('users').doc(uid).set({role, email:auth.currentUser.email}, {merge:true});
-}
-
-function showPage(id, btn){
+function showPage(id,btn){
   document.querySelectorAll('.page').forEach(p=>p.classList.add('hidden'));
   document.getElementById(id).classList.remove('hidden');
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
-  if(btn) btn.classList.add('active');
-  document.getElementById('pageTitle').textContent = btn.textContent.trim().slice(2);
-  if(window.innerWidth<768) toggleSidebar();
+  if(btn)btn.classList.add('active');
+  document.getElementById('pageTitle').textContent=btn.textContent.trim().slice(2);
+  if(window.innerWidth<768)toggleSidebar();
 }
 
 function toggleSidebar(){
@@ -340,182 +641,817 @@ function toggleSidebar(){
 }
 
 function applyRolePermissions(){
-  document.querySelectorAll('[data-role]').forEach(el=>{
-    const allowed = el.dataset.role.split(',');
-    el.style.display = allowed.includes(userRole) ? '' : 'none';
-  });
-  
-  if(userRole==='student'){
-    document.getElementById('studentForm').style.display='none';
-    document.getElementById('teacherForm').style.display='none';
-  }
+  const isStudent=userRole==='student';
+  const isAdmin=userRole==='admin';
+  const isTeacher=userRole==='teacher';
+
+  // Menu visibility
+  document.getElementById('elibraryNav').style.display='';
+  document.getElementById('feedbackNav').style.display='';
+  document.getElementById('feesNav').style.display=isAdmin?'':'none';
+  document.getElementById('teachersNav').style.display=isAdmin?'':'none';
+  document.getElementById('studentsNav').style.display=isStudent?'none':'';
+  document.getElementById('attendanceNav').style.display=isStudent?'none':'';
+  document.getElementById('aiNav').style.display=isStudent?'':'none';
+
+  // Forms visibility
+  document.getElementById('studentForm').style.display=isStudent?'none':'';
+  document.getElementById('teacherForm').style.display=isAdmin?'':'none';
+  document.getElementById('actionHeader').style.display=isStudent?'none':'';
+  document.getElementById('adminAnnouncementControls').classList.toggle('hidden',!isAdmin);
+  document.getElementById('adminBookForm').classList.toggle('hidden',!isAdmin);
+  document.getElementById('adminFeedbackView').classList.toggle('hidden',!isAdmin);
+  document.getElementById('feedbackFormCard').classList.toggle('hidden', isAdmin);
+
+  // Dashboard stats visibility
+  document.getElementById('statsGrid').style.display=(isStudent||isTeacher)?'none':'grid';
+  document.getElementById('feesStatCard').style.display=isAdmin?'':'none';
 }
 
 async function addStudent(){
-  const name = document.getElementById('sName').value.trim();
-  const cls = document.getElementById('sClass').value.trim();
-  
-  if(!name || !cls) return showToast("Fill all fields", "error");
-  if(userRole==='student') return showToast("No permission", "error");
-  
-  try{
-    await db.collection("students").add({
-      name,class:cls,
-      createdAt:firebase.firestore.FieldValue.serverTimestamp(),
-      createdBy:currentUser.uid
-    });
-    document.getElementById('sName').value='';
-    document.getElementById('sClass').value='';
-    showToast("Student added");
-  }catch(e){showToast(e.message,"error")}
+  if(userRole==='student')return showToast("No permission","error");
+  const name=document.getElementById('sName').value.trim();
+  const cls=document.getElementById('sClass').value.trim();
+  if(!name||!cls)return showToast("Fill all fields","error");
+
+  await db.collection("students").add({
+    name,class:cls,uid:currentUser.uid,
+    createdAt:firebase.firestore.FieldValue.serverTimestamp(),
+    createdBy:currentUser.uid
+  });
+  document.getElementById('sName').value='';
+  document.getElementById('sClass').value='';
+  showToast("Student added");
 }
 
 async function addTeacher(){
-  const name = document.getElementById('tName').value.trim();
-  const subject = document.getElementById('tSubject').value.trim();
-  
-  if(!name || !subject) return showToast("Fill all fields", "error");
-  if(userRole!=='admin') return showToast("Admin only", "error");
-  
-  try{
-    await db.collection("teachers").add({
-      name,subject,
-      createdAt:firebase.firestore.FieldValue.serverTimestamp(),
-      createdBy:currentUser.uid
-    });
-    document.getElementById('tName').value='';
-    document.getElementById('tSubject').value='';
-    showToast("Teacher added");
-  }catch(e){showToast(e.message,"error")}
-}
+  if(userRole!=='admin')return showToast("Admin only","error");
+  const name=document.getElementById('tName').value.trim();
+  const subject=document.getElementById('tSubject').value.trim();
+  if(!name||!subject)return showToast("Fill all fields","error");
 
-async function addFee(){
-  const student = document.getElementById('feeStudent').value.trim();
-  const amount = Number(document.getElementById('feeAmount').value);
-  
-  if(!student || !amount || amount<=0) return showToast("Enter valid data", "error");
-  
-  try{
-    await db.collection("fees").add({
-      student,amount,
-      createdAt:firebase.firestore.FieldValue.serverTimestamp(),
-      createdBy:currentUser.uid
-    });
-    document.getElementById('feeStudent').value='';
-    document.getElementById('feeAmount').value='';
-    showToast("Payment recorded");
-  }catch(e){showToast(e.message,"error")}
+  await db.collection("teachers").add({
+    name,subject,createdAt:firebase.firestore.FieldValue.serverTimestamp(),
+    createdBy:currentUser.uid
+  });
+  document.getElementById('tName').value='';
+  document.getElementById('tSubject').value='';
+  showToast("Teacher added");
 }
 
 async function deleteDoc(collection,id){
-  if(!confirm("Delete this record?")) return;
-  if(userRole==='student') return showToast("No permission", "error");
-  
-  try{
-    await db.collection(collection).doc(id).delete();
-    showToast("Deleted");
-  }catch(e){showToast(e.message,"error")}
+  if(userRole!=='admin')return showToast("Admin only","error");
+  if(!confirm("Delete this record?"))return;
+  await db.collection(collection).doc(id).delete();
+  showToast("Deleted");
 }
 
-function loadAll(){
-  unsubscribers.forEach(unsub => unsub());
-  unsubscribers = [];
-  
-  const unsub1 = db.collection("students").orderBy('createdAt','desc').onSnapshot(snap=>{
-    document.getElementById("totalStudents").textContent = snap.size;
+function loadData(){
+  unsubscribers.forEach(unsub=>unsub());
+  unsubscribers=[];
+
+  let studentQuery=db.collection("students").orderBy('createdAt','desc');
+  if(userRole==='student'){
+    studentQuery=db.collection("students").where('uid','==',currentUser.uid);
+  }
+
+  const unsub1=studentQuery.onSnapshot(snap=>{
+    document.getElementById("totalStudents").textContent=snap.size;
     let html="";
     snap.forEach(doc=>{
-      const d = doc.data();
-      const date = d.createdAt?new Date(d.createdAt.toDate()).toLocaleDateString():'-';
-      html+=`<tr>
-        <td>${d.name}</td>
-        <td>${d.class}</td>
-        <td>${date}</td>
-        <td><button class="btn btn-danger" style="padding:6px 12px;font-size:0.85rem" onclick="deleteDoc('students','${doc.id}')">Delete</button></td>
-      </tr>`;
+      const d=doc.data();
+      const date=d.createdAt?new Date(d.createdAt.toDate()).toLocaleDateString():'-';
+      const actions=userRole==='admin'
+ ?`<td><button class="btn btn-danger" style="padding:6px 12px;font-size:0.85rem" onclick="deleteDoc('students','${doc.id}')">Delete</button></td>`
+      :'<td>-</td>';
+      html+=`<tr><td>${d.name}</td><td>${d.class}</td><td>${date}</td>${actions}</tr>`;
     });
-    document.getElementById("studentList").innerHTML = html || '<tr><td colspan="4" style="text-align:center;color:var(--text2)">No students</td></tr>';
+    document.getElementById("studentList").innerHTML=html||'<tr><td colspan="4" style="text-align:center;color:var(--text2)">No students</td></tr>';
     loadAttendanceList(snap.docs);
   });
   unsubscribers.push(unsub1);
 
-  const unsub2 = db.collection("teachers").orderBy('createdAt','desc').onSnapshot(snap=>{
-    document.getElementById("totalTeachers").textContent = snap.size;
-    let html="";
-    snap.forEach(doc=>{
-      const d = doc.data();
-      const date = d.createdAt?new Date(d.createdAt.toDate()).toLocaleDateString():'-';
-      html+=`<tr>
-        <td>${d.name}</td>
-        <td>${d.subject}</td>
-        <td>${date}</td>
-        <td><button class="btn btn-danger" style="padding:6px 12px;font-size:0.85rem" onclick="deleteDoc('teachers','${doc.id}')">Delete</button></td>
-      </tr>`;
+  if(userRole==='admin'){
+    const unsub2=db.collection("teachers").orderBy('createdAt','desc').onSnapshot(snap=>{
+      document.getElementById("totalTeachers").textContent=snap.size;
+      let html="";
+      snap.forEach(doc=>{
+        const d=doc.data();
+        const date=d.createdAt?new Date(d.createdAt.toDate()).toLocaleDateString():'-';
+        html+=`<tr><td>${d.name}</td><td>${d.subject}</td><td>${date}</td>
+        <td><button class="btn btn-danger" style="padding:6px 12px;font-size:0.85rem" onclick="deleteDoc('teachers','${doc.id}')">Delete</button></td></tr>`;
+      });
+      document.getElementById("teacherList").innerHTML=html||'<tr><td colspan="4" style="text-align:center;color:var(--text2)">No teachers</td></tr>';
     });
-    document.getElementById("teacherList").innerHTML = html || '<tr><td colspan="4" style="text-align:center;color:var(--text2)">No teachers</td></tr>';
-  });
-  unsubscribers.push(unsub2);
+    unsubscribers.push(unsub2);
 
-  const unsub3 = db.collection("fees").orderBy('createdAt','desc').onSnapshot(snap=>{
-    let total=0;
-    let html="";
-    snap.forEach(doc=>{
-      const d = doc.data();
-      total += d.amount;
-      const date = d.createdAt?new Date(d.createdAt.toDate()).toLocaleDateString():'-';
-      html+=`<tr>
-        <td>${d.student}</td>
-        <td>UGX ${Number(d.amount).toLocaleString()}</td>
-        <td>${date}</td>
-        <td><button class="btn btn-danger" style="padding:6px 12px;font-size:0.85rem" onclick="deleteDoc('fees','${doc.id}')">Delete</button></td>
-      </tr>`;
+    const unsub3=db.collection("fees").orderBy('createdAt','desc').onSnapshot(snap=>{
+      let total=0;
+      snap.forEach(doc=>{
+        if(doc.data().type==='payment')total+=Number(doc.data().amount);
+      });
+      document.getElementById("feesTotal").textContent='UGX '+total.toLocaleString();
     });
-    document.getElementById("feesTotal").textContent = 'UGX '+total.toLocaleString();
-    document.getElementById("feeList").innerHTML = html || '<tr><td colspan="4" style="text-align:center;color:var(--text2)">No payments</td></tr>';
-  });
-  unsubscribers.push(unsub3);
+    unsubscribers.push(unsub3);
+  }
 }
 
-function loadAttendanceList(studentDocs){
-  const container = document.getElementById('attendanceList');
-  
-  if(studentDocs.length===0){
-    container.innerHTML = '<p style="color:var(--text2)">No students to mark attendance</p>';
-    return;
-  }
-  
+function loadAttendanceList(students){
+  if(userRole==='student')return;
   let html='';
-  studentDocs.forEach(doc=>{
-    const s = doc.data();
-    html+=`<div style="display:flex;justify-content:space-between;align-items:center;padding:12px;background:var(--bg3);border-radius:8px;margin-bottom:8px">
-      <span>${s.name} - ${s.class}</span>
-      <button class="btn btn-secondary" onclick="markAttendance('${doc.id}','${s.name}')">Mark Present</button>
+  students.forEach(doc=>{
+    const d=doc.data();
+    html+=`<div class="attendance-row">
+      <span>${d.name} - ${d.class}</span>
+      <div class="attendance-actions">
+        <button class="btn btn-success" onclick="markAttendance('${doc.id}','Present')">Present</button>
+        <button class="btn btn-danger" onclick="markAttendance('${doc.id}','Absent')">Absent</button>
+      </div>
     </div>`;
   });
-  container.innerHTML = html;
+  document.getElementById('attendanceList').innerHTML=html||'<p style="color:var(--text2)">No students</p>';
 }
 
-async function markAttendance(studentId,name){
-  const today = new Date().toISOString().split('T')[0];
-  try{
-    await db.collection('attendance').doc(`${studentId}_${today}`).set({
-      studentId,name,date:today,status:'Present',
-      createdAt:firebase.firestore.FieldValue.serverTimestamp()
-    });
-    showToast(`Marked ${name} present`);
-  }catch(e){showToast(e.message,"error")}
+async function markAttendance(studentId,status){
+  await db.collection('attendance').add({
+    studentId,
+    date:new Date().toISOString().split('T')[0],
+    status:status,
+    createdAt:firebase.firestore.FieldValue.serverTimestamp()
+  });
+  showToast(`Marked ${status}`);
 }
 
 function showToast(msg,type='success'){
-  const toast = document.getElementById('toast');
-  toast.textContent = msg;
-  toast.className = `toast ${type} show`;
+  const toast=document.getElementById('toast');
+  toast.textContent=msg;
+  toast.className=`toast show ${type==='error'?'error':''}`;
   setTimeout(()=>toast.classList.remove('show'),3000);
 }
 
-window.deleteDoc = deleteDoc;
-window.markAttendance = markAttendance;
-</script>
+/* ================= E-LIBRARY MODULE ================= */
 
+function loadBooks(){
+  if(bookUnsub) bookUnsub();
+
+  bookUnsub = db.collection('books').orderBy('createdAt','desc').onSnapshot(snap=>{
+    document.getElementById("totalBooks").textContent=snap.size;
+    let html = '';
+    if(snap.empty){
+      html = '<p style="color:var(--text2);text-align:center;grid-column:1/-1">No books in library yet</p>';
+    }else{
+      snap.forEach(doc=>{
+        const d = doc.data();
+        html += `
+          <div class="book-card">
+            <img src="${d.coverUrl||'https://via.placeholder.com/180x200/334155/e2e8f0?text=Book'}" alt="${d.title}">
+            <h3>${d.title}</h3>
+            <p style="color:var(--text2);font-size:0.85rem;margin-bottom:12px">${d.subject}</p>
+            <button class="btn" onclick="openBookReader('${doc.id}','${d.title}','${d.fileUrl}')">Read Online</button>
+            ${userRole==='admin'?`<button class="btn btn-danger" style="margin-top:8px" onclick="deleteBook('${doc.id}','${d.fileUrl}')">Delete</button>`:''}
+          </div>
+        `;
+      });
+    }
+    document.getElementById('bookGrid').innerHTML = html;
+  });
+}
+
+async function addBook(){
+  if(userRole!=='admin')return showToast("Admin only","error");
+
+  const title = document.getElementById('bookTitle').value.trim();
+  const subject = document.getElementById('bookSubject').value.trim();
+  const file = document.getElementById('bookFile').files[0];
+
+  if(!title||!subject||!file)return showToast("Fill all fields and select PDF","error");
+
+  const btn = document.getElementById('addBookBtn');
+  btn.innerHTML = '<span class="loading"></span> Uploading...';
+  btn.disabled = true;
+
+  try{
+    const fileRef = storage.ref(`library/${Date.now()}_${file.name}`);
+    const snapshot = await fileRef.put(file);
+    const fileUrl = await snapshot.ref.getDownloadURL();
+
+    await db.collection('books').add({
+      title,
+      subject,
+      fileUrl,
+      coverUrl: '',
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      createdBy: currentUser.uid
+    });
+
+    document.getElementById('bookTitle').value = '';
+    document.getElementById('bookSubject').value = '';
+    document.getElementById('bookFile').value = '';
+    showToast("Book uploaded successfully");
+  } catch(e) {
+    showToast(e.message, "error");
+  } finally {
+    btn.textContent = 'Upload Book';
+    btn.disabled = false;
+  }
+}
+
+async function deleteBook(id, fileUrl) {
+  if(userRole!== 'admin') return showToast("Admin only", "error");
+  if(!confirm("Delete this book? Students will lose access.")) return;
+
+  try {
+    if(fileUrl) {
+      try { await storage.refFromURL(fileUrl).delete(); } catch(e){}
+    }
+    await db.collection('books').doc(id).delete();
+    showToast("Book deleted");
+  } catch(e) {
+    showToast(e.message, "error");
+  }
+}
+
+function openBookReader(id, title, fileUrl) {
+  document.getElementById('readerBookTitle').textContent = title;
+  const viewerUrl = `https://docs.google.com/gview?url=${encodeURIComponent(fileUrl)}&embedded=true`;
+  document.getElementById('bookFrame').src = viewerUrl;
+  document.getElementById('bookReader').style.display = 'flex';
+
+  db.collection('bookAccess').add({
+    bookId: id,
+    bookTitle: title,
+    userId: currentUser.uid,
+    userName: userName,
+    userRole: userRole,
+    accessedAt: firebase.firestore.FieldValue.serverTimestamp()
+  });
+}
+
+function closeBookReader() {
+  document.getElementById('bookFrame').src = '';
+  document.getElementById('bookReader').style.display = 'none';
+}
+
+document.addEventListener('contextmenu', e => {
+  if(document.getElementById('bookReader').style.display === 'flex') {
+    e.preventDefault();
+  }
+});
+
+/* ================= FEEDBACK MODULE ================= */
+
+async function sendFeedback(){
+  const msg = document.getElementById('feedbackMsg').value.trim();
+  if(!msg)return showToast("Enter your feedback","error");
+
+  const btn = document.getElementById('sendFeedbackBtn');
+  btn.innerHTML = '<span class="loading"></span> Sending...';
+  btn.disabled = true;
+
+  try{
+    await db.collection('feedbacks').add({
+      message:msg,
+      senderName:currentUserName,
+      senderRole:userRole,
+      senderId:currentUser.uid,
+      createdAt:firebase.firestore.FieldValue.serverTimestamp()
+    });
+    document.getElementById('feedbackMsg').value='';
+    showToast("Feedback sent to admin");
+  }catch(e){
+    showToast(e.message,"error");
+  }finally{
+    btn.textContent = 'Send Feedback';
+    btn.disabled = false;
+  }
+}
+
+function loadMyFeedbacks(){
+  if(myFeedbackUnsub) myFeedbackUnsub();
+
+  myFeedbackUnsub = db.collection('feedbacks')
+   .where('senderId','==',currentUser.uid)
+   .orderBy('createdAt','desc')
+   .onSnapshot(snap=>{
+      let html = '';
+      if(snap.empty){
+        html = '<p style="color:var(--text2);text-align:center">No feedback sent yet</p>';
+      }else{
+        snap.forEach(doc=>{
+          const d = doc.data();
+          const date = d.createdAt?new Date(d.createdAt.toDate()).toLocaleString():'-';
+          html += `
+            <div class="feedback-card">
+              <div class="feedback-meta">Sent: ${date}</div>
+              <div class="feedback-msg">${d.message}</div>
+            </div>
+          `;
+        });
+      }
+      document.getElementById('myFeedbackList').innerHTML = html;
+    });
+}
+
+function loadAllFeedbacks(){
+  if(userRole!=='admin')return;
+  if(feedbackUnsub) feedbackUnsub();
+
+  const filter = document.getElementById('feedbackFilter')?.value || 'all';
+  let query = db.collection('feedbacks').orderBy('createdAt','desc');
+
+  feedbackUnsub = query.onSnapshot(snap=>{
+    let html = '';
+    if(snap.empty){
+      html = '<p style="color:var(--text2);text-align:center">No feedback received yet</p>';
+    }else{
+      snap.forEach(doc=>{
+        const d = doc.data();
+        if(filter!=='all' && d.senderRole!==filter) return;
+
+        const date = d.createdAt?new Date(d.createdAt.toDate()).toLocaleString():'-';
+        const roleBadge = d.senderRole==='student'
+         ?'<span class="badge badge-student">Student</span>'
+          :'<span class="badge badge-teacher">Teacher</span>';
+
+        html += `
+          <div class="feedback-card">
+            <div class="feedback-header">
+              <div>
+                <strong>${d.senderName}</strong> ${roleBadge}
+              </div>
+              <button class="btn btn-danger" style="padding:4px 10px;font-size:0.75rem;width:auto" onclick="deleteFeedback('${doc.id}')">Delete</button>
+            </div>
+            <div class="feedback-meta">Received: ${date}</div>
+            <div class="feedback-msg">${d.message}</div>
+          </div>
+        `;
+      });
+    }
+    if(html==='') html = '<p style="color:var(--text2);text-align:center">No feedback matching filter</p>';
+    document.getElementById('allFeedbackList').innerHTML = html;
+  });
+}
+
+async function deleteFeedback(id){
+  if(userRole!=='admin')return showToast("Admin only","error");
+  if(!confirm("Delete this feedback?"))return;
+  await db.collection('feedbacks').doc(id).delete();
+  showToast("Feedback deleted");
+}
+/* ================= BILLING MODULE - ADMIN ONLY ================= */
+
+function initBilling(){
+  if(billingUnsub) billingUnsub();
+
+  billingUnsub = db.collection('students').onSnapshot(studentSnap=>{
+    let students = studentSnap.docs.map(d=>({id:d.id,...d.data()}));
+
+    db.collection('fees').onSnapshot(feeSnap=>{
+      let fees = feeSnap.docs.map(d=>({id:d.id,...d.data()}));
+
+      billingSchoolData.students = students.map(s=>{
+        let studentFees = fees.filter(f=>f.studentId===s.id && f.type==='fee');
+        let studentPayments = fees.filter(f=>f.studentId===s.id && f.type==='payment');
+        return {
+          id: s.id,
+          name: s.name,
+          className: s.class || '',
+          photo: s.photo || getDefaultAvatar(s.name),
+          fees: studentFees.map(f=>({id:f.id, description:f.description, amount:f.amount, date:f.date})),
+          payments: studentPayments.map(p=>({id:p.id, amount:p.amount, method:p.method, date:p.date, note:p.note}))
+        }
+      });
+
+      document.getElementById('billingSyncStatus').textContent = "☁ Synced";
+      billingUpdateSummary();
+      billingRenderStudentList();
+      if(billingSelectedStudentId) billingSelectStudent(billingSelectedStudentId);
+    });
+  });
+}
+
+function formatUGX(amount) {
+  return 'UGX ' + Number(amount).toLocaleString('en-UG', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+}
+
+function getDefaultAvatar(name = "Student") {
+  const initial = name? name.charAt(0).toUpperCase() : 'S';
+  return `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='50' fill='%23cbd5a0'/%3E%3Ctext x='50' y='67' font-size='44' text-anchor='middle' fill='%233b5e2b' font-weight='bold'%3E${initial}%3C/text%3E%3C/svg%3E`;
+}
+
+function billingTotalFeesAmount(student) {
+  return student.fees.reduce((sum, f) => sum + Number(f.amount||0), 0);
+}
+
+function billingTotalPaymentsAmount(student) {
+  return student.payments.reduce((sum, p) => sum + Number(p.amount||0), 0);
+}
+
+function billingGetBalance(student) {
+  return billingTotalFeesAmount(student) - billingTotalPaymentsAmount(student);
+}
+
+function billingUpdateSummary() {
+  let collected = 0, pending = 0;
+  billingSchoolData.students.forEach(s => {
+    collected += billingTotalPaymentsAmount(s);
+    pending += billingGetBalance(s);
+  });
+  document.getElementById('billingTotalCollected').innerHTML = formatUGX(collected);
+  document.getElementById('billingTotalPending').innerHTML = formatUGX(pending);
+  document.getElementById('billingStudentCount').innerText = billingSchoolData.students.length;
+}
+
+function billingFilterStudents() {
+  if (!billingSearchQuery.trim()) return billingSchoolData.students;
+  const q = billingSearchQuery.trim().toLowerCase();
+  return billingSchoolData.students.filter(s =>
+    s.name.toLowerCase().includes(q) || s.className.toLowerCase().includes(q)
+  );
+}
+
+function billingRenderStudentList() {
+  const container = document.getElementById('billingStudentListContainer');
+  const filtered = billingFilterStudents();
+  if (filtered.length === 0) {
+    container.innerHTML = '<div class="empty-message">No matching students.<br>Adjust search or add new.</div>';
+    return;
+  }
+  container.innerHTML = '';
+  filtered.forEach(student => {
+    const balance = billingGetBalance(student);
+    const div = document.createElement('div');
+    div.className = `student-item ${billingSelectedStudentId === student.id? 'selected' : ''}`;
+    div.innerHTML = `
+      <img class="student-avatar" src="${student.photo}" onerror="this.src='${getDefaultAvatar(student.name)}'">
+      <div class="student-info"><h4>${student.name}</h4><p>${student.className}</p></div>
+      <div class="balance-badge">${formatUGX(balance)}</div>
+    `;
+    div.onclick = () => billingSelectStudent(student.id);
+    container.appendChild(div);
+  });
+}
+
+function billingSelectStudent(id) {
+  billingSelectedStudentId = id;
+  billingRenderStudentList();
+  const student = billingSchoolData.students.find(s => s.id === id);
+  if (!student) return;
+
+  document.getElementById('billingSelectedStudentView').innerHTML = `
+    <div style="font-weight:600;font-size:1.1rem;">${student.name} - ${student.className}</div>
+    <div style="margin:1rem 0;">Balance: <strong>${formatUGX(billingGetBalance(student))}</strong></div>
+
+    <h4>Fees</h4>
+    <table class="fee-table">
+    <thead><tr><th>Description</th><th>Amount</th><th>Date</th><th></th></tr></thead>
+    <tbody>${student.fees.map(f => `
+      <tr>
+        <td>${f.description}</td>
+        <td>${formatUGX(f.amount)}</td>
+        <td>${f.date}</td>
+        <td>${userRole==='admin'?`<button class="delete-icon" onclick="billingDeleteFee('${student.id}','${f.id}')">×</button>`:''}</td>
+      </tr>`).join('') || '<tr><td colspan="4" class="empty-message">No fees</td></tr>'}
+    </tbody>
+    </table>
+
+    ${userRole==='admin'?`
+    <div class="form-row" style="margin-top:1rem;">
+      <div class="form-group"><label>Description</label><input type="text" id="billingFeeDesc"></div>
+      <div class="form-group"><label>Amount</label><input type="number" id="billingFeeAmount"></div>
+      <div class="form-group"><label>Date</label><input type="date" id="billingFeeDate"></div>
+      <div><button class="primary" onclick="billingAddFee('${student.id}')" style="margin-top:1.4rem;">Add Fee</button></div>
+    </div>`:''}
+
+    <hr>
+
+    <h4>Payments</h4>
+    <table class="payment-table">
+    <thead><tr><th>Amount</th><th>Method</th><th>Date</th><th>Note</th><th></th></tr></thead>
+    <tbody>${student.payments.map(p => `
+      <tr>
+        <td>${formatUGX(p.amount)}</td>
+        <td><span class="method-${p.method || 'cash'}">${(p.method || 'cash').toUpperCase()}</span></td>
+        <td>${p.date}</td>
+        <td>${p.note||''}</td>
+        <td>${userRole==='admin'?`<button class="delete-icon" onclick="billingDeletePayment('${student.id}','${p.id}')">×</button>`:''}</td>
+      </tr>`).join('') || '<tr><td colspan="5" class="empty-message">No payments</td></tr>'}
+    </tbody>
+    </table>
+
+    ${userRole==='admin'?`
+    <div class="form-row" style="margin-top:1rem;">
+      <div class="form-group"><label>Amount</label><input type="number" id="billingPayAmount"></div>
+      <div class="form-group"><label>Method</label><select id="billingPayMethod">
+        <option value="cash">Cash</option>
+        <option value="mtn">MTN</option>
+        <option value="airtel">Airtel</option>
+        <option value="bank">Bank</option>
+      </select></div>
+      <div class="form-group"><label>Date</label><input type="date" id="billingPayDate"></div>
+      <div class="form-group"><label>Note</label><input type="text" id="billingPayNote"></div>
+      <div><button class="primary" onclick="billingAddPayment('${student.id}')" style="margin-top:1.4rem;">Add Payment</button></div>
+    </div>`:''}
+  `;
+}
+
+async function billingAddStudent() {
+  if(userRole!=='admin') return;
+  const name = document.getElementById('billingStudentName').value.trim();
+  const className = document.getElementById('billingStudentClass').value.trim();
+  if (!name ||!className) return billingShowNotification('Fill all fields');
+
+  await db.collection("students").add({
+    name,class:className, uid: currentUser.uid,
+    createdAt:firebase.firestore.FieldValue.serverTimestamp(),
+    createdBy:currentUser.uid
+  });
+  document.getElementById('billingStudentName').value = '';
+  document.getElementById('billingStudentClass').value = '';
+  billingShowNotification('Student added');
+}
+
+async function billingAddFee(sid) {
+  const desc = document.getElementById('billingFeeDesc').value.trim();
+  const amt = parseFloat(document.getElementById('billingFeeAmount').value);
+  const date = document.getElementById('billingFeeDate').value;
+  if (!desc ||!amt ||!date) return billingShowNotification('Fill all fields');
+
+  await db.collection("fees").add({
+    studentId:sid, type:'fee', description:desc, amount:amt, date,
+    createdAt:firebase.firestore.FieldValue.serverTimestamp()
+  });
+  billingShowNotification('Fee added');
+}
+
+async function billingAddPayment(sid) {
+  const amt = parseFloat(document.getElementById('billingPayAmount').value);
+  const method = document.getElementById('billingPayMethod').value;
+  const date = document.getElementById('billingPayDate').value;
+  const note = document.getElementById('billingPayNote').value.trim();
+  if (!amt ||!date) return billingShowNotification('Fill amount and date');
+
+  await db.collection("fees").add({
+    studentId:sid, type:'payment', amount:amt, method, date, note,
+    createdAt:firebase.firestore.FieldValue.serverTimestamp()
+  });
+  billingShowNotification('Payment added');
+}
+
+async function billingDeleteFee(sid, fid) {
+  if(userRole!=='admin') return;
+  await db.collection("fees").doc(fid).delete();
+  billingShowNotification('Fee deleted');
+}
+
+async function billingDeletePayment(sid, pid) {
+  if(userRole!=='admin') return;
+  await db.collection("fees").doc(pid).delete();
+  billingShowNotification('Payment deleted');
+}
+
+function billingShowNotification(msg) {
+  const toast = document.getElementById('billingNotificationToast');
+  toast.textContent = msg;
+  toast.style.opacity = '1';
+  setTimeout(() => toast.style.opacity = '0', 2000);
+}
+
+async function billingClearAll(){
+  if(userRole!=='admin') return;
+  if(!confirm('Clear all fee records? This cannot be undone.')) return;
+
+  let batch = db.batch();
+  let feesSnap = await db.collection('fees').get();
+  feesSnap.forEach(d=>batch.delete(d.ref));
+  await batch.commit();
+  billingShowNotification('All fees cleared');
+}
+
+function billingExportExcel(){
+  let data = [['Student','Class','Fee/Payment','Description','Amount','Method','Date','Note']];
+
+  billingSchoolData.students.forEach(s=>{
+    s.fees.forEach(f=>{
+      data.push([s.name,s.className,'Fee',f.description,f.amount,'',f.date,'']);
+    });
+    s.payments.forEach(p=>{
+      data.push([s.name,s.className,'Payment','',p.amount,p.method,p.date,p.note||'']);
+    });
+  });
+
+  const ws = XLSX.utils.aoa_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Billing');
+  XLSX.writeFile(wb, 'SmartEdu_Billing_Report.xlsx');
+}
+
+function billingImportExcel(e){
+  const file = e.target.files[0];
+  if(!file) return;
+
+  const reader = new FileReader();
+  reader.onload = async function(e){
+    const data = new Uint8Array(e.target.result);
+    const workbook = XLSX.read(data, {type:'array'});
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(sheet);
+
+    let batch = db.batch();
+    rows.forEach(row=>{
+      if(row.Student){
+        const student = billingSchoolData.students.find(s=>s.name===row.Student);
+        if(student && row.Amount){
+          batch.set(db.collection('fees').doc(), {
+            studentId:student.id,
+            type:row['Fee/Payment']==='Payment'?'payment':'fee',
+            description:row.Description||'Imported',
+            amount:Number(row.Amount),
+            method:row.Method||'cash',
+            date:row.Date||new Date().toISOString().split('T')[0],
+            note:row.Note||'',
+            createdAt:firebase.firestore.FieldValue.serverTimestamp()
+          });
+        }
+      }
+    });
+
+    await batch.commit();
+    billingShowNotification('Excel imported successfully');
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+/* ===================== SMART AI CHAT ===================== */
+
+async function sendChat(){
+  const input = document.getElementById('chatInput');
+  const msg = input.value.trim();
+  if(!msg) return;
+
+  const box = document.getElementById('chatBox');
+
+  box.innerHTML += `<div class="chat-msg user">${msg}</div>`;
+  input.value = '';
+  box.scrollTop = box.scrollHeight;
+
+  const typingId = 'typing-' + Date.now();
+  box.innerHTML += `<div class="chat-msg ai" id="${typingId}"><span class="loading"></span> Thinking...</div>`;
+  box.scrollTop = box.scrollHeight;
+
+  let reply = "";
+  const q = msg.toLowerCase();
+
+  if(q.includes('math') || q.includes('mathematics')){
+    reply = `📘 Mathematics Help<br><br>Steps:<br>1. Read the question carefully<br>2. Identify the formula<br>3. Substitute values<br>4. Solve step by step<br>5. Verify the answer`;
+  }
+  else if(q.includes('science')){
+    reply = `🔬 Science Help<br><br>Include:<br>• Definitions<br>• Explanations<br>• Examples<br>• Diagrams<br>• Conclusion`;
+  }
+  else if(q.includes('history')){
+    reply = `📜 History Help<br><br>Mention:<br>• Dates<br>• Events<br>• Causes<br>• Effects<br>• Importance`;
+  }
+  else if(q.includes('english')){
+    reply = `📖 English Help<br><br>Use:<br>• Proper grammar<br>• Correct punctuation<br>• Good vocabulary<br>• Clear paragraphs`;
+  }
+  else if(q.includes('ict') || q.includes('computer')){
+    reply = `💻 ICT Help<br><br>Topics include:<br>• Hardware<br>• Software<br>• Networking<br>• Internet<br>• Computer safety`;
+  }
+  else if(q.includes('assignment')){
+    reply = `📝 Send the full assignment question.<br><br>I can help you:<br>• Solve mathematics<br>• Explain topics<br>• Revise notes<br>• Prepare for exams<br>• Answer theory questions`;
+  }
+  else if(q.includes('hello') || q.includes('hi')){
+    reply = `👋 Hello Student!<br><br>I am your SmartEdu AI Assistant. Ask me any assignment or revision question.`;
+  }
+  else{
+    reply = `🤖 SmartEdu AI Assistant<br><br>I can help you with:<br>• Mathematics<br>• English<br>• ICT<br>• Science<br>• History<br>• Assignments<br>• Revision<br><br>Type your question clearly.`;
+  }
+
+  setTimeout(()=>{
+    const typing = document.getElementById(typingId);
+    if(typing){ typing.innerHTML = reply; }
+    box.scrollTop = box.scrollHeight;
+  },1000);
+}
+
+/* ===================== ANNOUNCEMENTS MODULE ===================== */
+
+function loadAnnouncements(){
+  if(announcementUnsub) announcementUnsub();
+
+  let query = db.collection('announcements').orderBy('createdAt','desc');
+
+  announcementUnsub = query.onSnapshot(snap=>{
+    let html = '';
+    if(snap.empty){
+      html = '<p style="color:var(--text2);text-align:center">No announcements yet</p>';
+    }else{
+      snap.forEach(doc=>{
+        const d = doc.data();
+
+        let showThis = false;
+        if(userRole === 'admin') showThis = true;
+        else if(userRole === 'teacher') showThis = true;
+        else if(userRole === 'student' && d.target === 'student') showThis = true;
+
+        if(!showThis) return;
+
+        const date = d.createdAt?new Date(d.createdAt.toDate()).toLocaleString():'-';
+        let filesHtml = '';
+        if(d.files && d.files.length){
+          filesHtml = '<div style="margin-top:8px">';
+          d.files.forEach(f=>{
+            const icon = f.type.includes('pdf')?'📄':'🖼';
+            filesHtml += `<a href="${f.url}" target="_blank" class="announcement-file">${icon} ${f.name}</a>`;
+          });
+          filesHtml += '</div>';
+        }
+
+        const targetBadge = d.target === 'student'
+     ? '<span class="badge badge-student" style="margin-left:8px;font-size:0.7rem">Students</span>'
+          : '<span class="badge badge-teacher" style="margin-left:8px;font-size:0.7rem">Teachers</span>';
+
+html += `
+          <div class="announcement-card">
+            ${userRole==='admin'?`<button class="delete-ann" onclick="deleteAnnouncement('${doc.id}')">×</button>`:''}
+            <h4>${d.title}${userRole==='admin'?targetBadge:''}</h4>
+            <p>${d.message}</p>
+            ${filesHtml}
+            <div class="announcement-meta">Posted: ${date}</div>
+          </div>
+        `;
+      });
+    }
+    if(html === '') html = '<p style="color:var(--text2);text-align:center">No announcements for you yet</p>';
+    document.getElementById('announcementList').innerHTML = html;
+  });
+}
+
+async function sendAnnouncement(target){
+  if(userRole!=='admin')return showToast("Admin only","error");
+
+  const titleId = target+'AnnTitle';
+  const msgId = target+'AnnMsg';
+  const filesId = target+'AnnFiles';
+  const btnId = 'send'+target.charAt(0).toUpperCase()+target.slice(1)+'AnnBtn';
+
+  const title = document.getElementById(titleId).value.trim();
+  const message = document.getElementById(msgId).value.trim();
+  const files = document.getElementById(filesId).files;
+
+  if(!title||!message)return showToast("Fill title and message","error");
+
+  const btn = document.getElementById(btnId);
+  btn.innerHTML = '<span class="loading"></span> Sending...';
+  btn.disabled = true;
+
+  try{
+    let fileData = [];
+    if(files.length){
+      for(let file of files){
+        const fileRef = storage.ref(`announcements/${Date.now()}_${file.name}`);
+        const snapshot = await fileRef.put(file);
+        const url = await snapshot.ref.getDownloadURL();
+        fileData.push({name:file.name,url,type:file.type});
+      }
+    }
+
+    await db.collection('announcements').add({
+      title,message,target,files:fileData,
+      createdAt:firebase.firestore.FieldValue.serverTimestamp(),
+      createdBy:currentUser.uid
+    });
+
+    document.getElementById(titleId).value='';
+    document.getElementById(msgId).value='';
+    document.getElementById(filesId).value='';
+    showToast(`Sent to ${target}s`);
+  }catch(e){
+    showToast(e.message,"error");
+  }finally{
+    btn.textContent = 'Send to '+target.charAt(0).toUpperCase()+target.slice(1)+'s';
+    btn.disabled = false;
+  }
+}
+
+async function deleteAnnouncement(id){
+  if(userRole!=='admin')return showToast("Admin only","error");
+  if(!confirm("Delete this announcement?"))return;
+
+  try{
+    const doc = await db.collection('announcements').doc(id).get();
+    const data = doc.data();
+    if(data.files){
+      for(let f of data.files){
+        try{ await storage.refFromURL(f.url).delete(); }catch(e){}
+      }
+    }
+    await db.collection('announcements').doc(id).delete();
+    showToast("Deleted");
+  }catch(e){
+    showToast(e.message,"error");
+  }
+}
+</script>
 </body>
 </html>
